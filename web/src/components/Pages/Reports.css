@@ -1,0 +1,22 @@
+.sui-layout-body__inner {
+  margin-right: auto;
+  margin-left: auto;
+  max-width: 95%;
+}
+
+.sui-layout-body {
+  width: 100%;
+}
+
+@media screen and (min-width: 600px) {
+  .sui-layout-sidebar {
+    width: 20%;
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+    top: 0;
+  }
+  
+  .sui-layout-main {
+    width: 80%;
+  }  
+}

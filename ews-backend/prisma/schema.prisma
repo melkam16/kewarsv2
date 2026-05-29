@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model reports {
+  id                Int       @id @default(autoincrement())
+  incident_datetime DateTime? @db.Timestamp(6)
+  region            String?   @db.VarChar(100)
+  zone              String?   @db.VarChar(100)
+  woreda            String?   @db.VarChar(100)
+  status            String?   @db.VarChar(50)
+  severity          String?   @db.VarChar(50)
+  categories        String[]
+  data              Json?
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  drafts            drafts[]
+}
+
+model drafts {
+  report_id      Int
+  revision       Int
+  data           Json
+  draft_saved_at DateTime @default(now()) @db.Timestamp(6)
+  reports        reports  @relation(fields: [report_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([report_id, revision])
+}
+
+
+model user_roles {
+  user_id String @db.Uuid
+  role    String
+  users   users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, role])
+}
+
+model users {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String       @unique
+  password   String
+  enabled    Boolean?     @default(true)
+  created_at DateTime?    @default(now()) @db.Timestamp(6)
+  role       String?
+  user_roles user_roles[]
+}

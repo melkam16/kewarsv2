@@ -1,0 +1,10 @@
+{
+  "name": "kewars-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend": "npm start --prefix ews-backend",
+    "frontend": "npm start --prefix web",
+    "start": "npx -y concurrently --kill-others-on-fail \"npm run backend\" \"npm run frontend\""
+  }
+}

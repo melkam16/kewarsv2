@@ -1,0 +1,9 @@
+svg .region:hover {
+  stroke: black;
+  stroke-width: 1px;
+  cursor: pointer;
+}
+
+svg {
+  display: block;
+}
