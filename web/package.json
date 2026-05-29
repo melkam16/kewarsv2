@@ -5,6 +5,7 @@
   "dependencies": {
     "@aws-amplify/ui-react": "^2.6.2",
     "@date-io/dayjs": "^2.13.1",
+    "dayjs": "^1.11.0",
     "@elastic/react-search-ui": "^1.9.0",
     "@elastic/react-search-ui-views": "^1.9.0",
     "@emotion/react": "^11.7.1",
