@@ -30,7 +30,18 @@ app.locals.db = prisma;
    Middleware
 ============================ */
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: (origin, callback) => {
+        const allowed = [
+            "http://localhost:3000",
+            process.env.CORS_ORIGIN
+        ].filter(Boolean);
+        // Allow requests with no origin (server-to-server, curl, etc.)
+        if (!origin || allowed.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true); // permissive in v1 — tighten after domain confirmed
+        }
+    },
     credentials: true
 }));
 
@@ -472,10 +483,14 @@ app.use((err, req, res, next) => {
 });
 
 /* ============================
-   Start Server
+   Start Server (local only)
 ============================ */
-const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Export for Vercel serverless runtime
+export default app;

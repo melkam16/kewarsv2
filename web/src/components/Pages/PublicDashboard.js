@@ -52,6 +52,8 @@ import { Bar, Pie } from "react-chartjs-2";
 
 import config from '../../config';
 import MediaViewer from '../mediaViewer';
+import API_BASE from '../../api/apiBase';
+
 
 ChartJS.register(
   ArcElement,
@@ -62,8 +64,6 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-
-const API_BASE = "http://localhost:5000/api";
 
 // Google Incidents Map Component for Public Dashboard
 const PublicIncidentMap = ({ results, onViewDetails }) => {

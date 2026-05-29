@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import Report from "../report";
 
-const API_BASE = "http://localhost:5000/api";
+import API_BASE from '../../api/apiBase';
 
 function CreateReport() {
   const navigate = useNavigate();

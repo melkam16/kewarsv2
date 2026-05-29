@@ -19,7 +19,7 @@ import CombinedReport from "../combinedReport";
 import ConfirmLoadDraft from "../Dialogs/ConfirmLoadDraft";
 import { ReportStatus } from "../../config";
 
-const API_BASE = "http://localhost:5000/api";
+import API_BASE from '../../api/apiBase';
 const fullWidth = 12;
 
 function ReportDetail({ readOnly }) {

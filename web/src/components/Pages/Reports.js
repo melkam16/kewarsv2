@@ -25,7 +25,7 @@ import { Layout, MultiCheckboxFacet } from "@elastic/react-search-ui-views";
 
 import "./Reports.css";
 
-const API_BASE = "http://localhost:5000/api";
+import API_BASE from '../../api/apiBase';
 
 const sortOptions = [
   { name: "Relevance", value: "", direction: "" },

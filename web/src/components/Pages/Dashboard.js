@@ -29,7 +29,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 
 import { AuthContext } from "../contexts/AuthContext";
 
-const API_BASE = "http://localhost:5000/api";
+import API_BASE from '../../api/apiBase';
 
 ChartJS.register(
   ArcElement,
