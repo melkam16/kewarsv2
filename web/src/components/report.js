@@ -21,7 +21,6 @@ import set from 'lodash.set';
 import get from 'lodash.get';
 import DayjsUtils from '@date-io/dayjs';
 import { geoCentroid, geoContains } from 'd3-geo';
-
 import CategorySelect from './categoriesSelect';
 import LocationSelector from './LocationSelector';
 import MapContainer from './mapContainer';

@@ -8,25 +8,43 @@ datasource db {
 }
 
 model reports {
-  id                Int       @id @default(autoincrement())
-  incident_datetime DateTime? @db.Timestamp(6)
-  region            String?   @db.VarChar(100)
-  zone              String?   @db.VarChar(100)
-  woreda            String?   @db.VarChar(100)
-  status            String?   @db.VarChar(50)
-  severity          String?   @db.VarChar(50)
-  categories        String[]
-  data              Json?
-  created_at        DateTime? @default(now()) @db.Timestamp(6)
-  drafts            drafts[]
-}
-
-model drafts {
-  report_id      Int
-  revision       Int
-  data           Json
-  draft_saved_at DateTime @default(now()) @db.Timestamp(6)
-  reports        reports  @relation(fields: [report_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  report_id                  String    @db.Uuid
+  revision                   String    @db.VarChar(10)
+  status                     String?   @db.VarChar(50)
+  severity                   String?   @db.VarChar(20)
+  title                      String?
+  description                String?
+  notes                      String?
+  eyewitness                 Boolean?
+  has_media                  Boolean?
+  latest_version             Int?
+  report_date_time           DateTime? @db.Timestamptz(6)
+  incident_date_time         DateTime? @db.Timestamptz(6)
+  update_timestamp           DateTime? @db.Timestamptz(6)
+  
+  // Location fields flattened
+  woreda                     String?   @db.VarChar(100)
+  zone                       String?   @db.VarChar(100)
+  region                     String?   @db.VarChar(100)
+  location_other             String?
+  is_location_manual         Boolean?
+  incident_location_inferred Boolean?
+  
+  // GPS Coordinates
+  latitude                   Decimal?  @db.Decimal(15, 12)
+  longitude                  Decimal?  @db.Decimal(15, 12)
+  gps_calculated             Boolean?
+  
+  // Reporter & Analyst Auditing
+  reporter_name              String?   @db.VarChar(150)
+  reporter_sub               String?   @db.Uuid
+  analyst_name               String?   @db.VarChar(150)
+  analyst_sub                String?   @db.Uuid
+  
+  // Categories and Media stored as standard Postgres Arrays
+  categories                 String[]
+  media_files                String[]
+  media_files_mime           String[]
 
   @@id([report_id, revision])
 }
@@ -50,3 +68,15 @@ model users {
   role       String?
   user_roles user_roles[]
 }
+
+model students {
+  id         Int      @id @default(autoincrement())
+  student_id String   @unique @db.VarChar(50)
+  name       String   @db.VarChar(100)
+  email      String?  @db.VarChar(100)
+  department String   @db.VarChar(100)
+  class_year Int
+  status     String   @default("active") @db.VarChar(50)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+}
+

@@ -225,7 +225,7 @@ function ReportDetail({ readOnly }) {
 
   // ---------------- UI ----------------
   return (
-    <Paper elevation={3} sx={{ mx: 5, pb: 2 }}>
+    <Paper elevation={3} sx={{ mx: { xs: 1.5, sm: 3, md: 5 }, p: { xs: 2, sm: 3 }, pb: 2 }}>
       <Stack direction="row" spacing={2}>
         <h2>
           Report Detail {report && `(v${report.latestVersion})`}
@@ -260,7 +260,7 @@ function ReportDetail({ readOnly }) {
             <>
               <Grid item xs={fullWidth} sx={{ mt: 2 }}>
                 <Stack
-                  direction="row"
+                  direction={{ xs: "column", sm: "row" }}
                   spacing={2}
                   justifyContent="center"
                 >

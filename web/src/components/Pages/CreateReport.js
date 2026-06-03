@@ -39,7 +39,7 @@ function CreateReport() {
   });
 
   const [report, setReport] = useState({
-    reporter: user ? { sub: user.sub, name: user.name } : null,
+    reporter: user ? { sub: user.id || user.sub, name: user.name } : null,
     title: "",
     description: "",
     categories: [],
@@ -167,11 +167,11 @@ function CreateReport() {
   };
 
   return (
-    <Paper elevation={0} sx={{ p: 4, borderRadius: 4, border: "1px solid #e2e8f0", bgcolor: '#ffffff' }}>
+    <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 4, border: "1px solid #e2e8f0", bgcolor: '#ffffff' }}>
       {/* Premium Glassmorphic Header Card */}
       <Box 
         sx={{ 
-          p: 4, 
+          p: { xs: 2.5, sm: 4 }, 
           mb: 4, 
           borderRadius: 4, 
           background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
@@ -326,7 +326,7 @@ function CreateReport() {
       {/* Submission Buttons Block */}
       <Divider sx={{ my: 4 }} />
       <Grid item xs={12}>
-        <Stack direction="row" spacing={2} justifyContent="center">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
           <Button 
             variant="outlined" 
             onClick={() => navigate(-1)}

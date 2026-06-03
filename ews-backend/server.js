@@ -9,6 +9,7 @@ import prisma from './prisma.js';
 
 import reportsRoutes from './routes/reports.js';
 import usersRoutes from './routes/user.js';
+import studentsRoutes from './routes/students.js';
 
 const app = express();
 
@@ -68,25 +69,27 @@ app.get("/", (req, res) => {
 app.get("/api/public/reports", async (req, res, next) => {
     try {
         const publishedReports = await prisma.reports.findMany({
-            where: { status: "published" },
-            orderBy: { incident_datetime: "desc" }
+            where: { 
+                status: "published",
+                revision: { not: "draft" }
+            },
+            orderBy: { incident_date_time: "desc" }
         });
 
         const mapped = publishedReports.map((r) => {
-            const data = r.data || {};
             return {
-                id: r.id,
-                title: data.title || r.title || `Report ${r.id}`,
-                description: data.description || r.description || "",
-                incidentDateTime: r.incident_datetime ? r.incident_datetime.toISOString() : (data.incidentDateTime || new Date().toISOString()),
-                region: r.region || data.incidentLocation?.region || "",
-                zone: r.zone || data.incidentLocation?.zone || "",
-                woreda: r.woreda || data.incidentLocation?.woreda || "",
-                severity: r.severity || data.severity || "low",
-                categories: r.categories || data.categories || [],
-                incidentGps: data.incidentGps || null,
-                mediaFiles: data.mediaFiles || [],
-                otherLocation: data.incidentLocation?.other || ""
+                id: r.report_id,
+                title: r.title || `Report ${r.report_id}`,
+                description: r.description || "",
+                incidentDateTime: r.incident_date_time ? r.incident_date_time.toISOString() : new Date().toISOString(),
+                region: r.region || "",
+                zone: r.zone || "",
+                woreda: r.woreda || "",
+                severity: r.severity || "low",
+                categories: r.categories || [],
+                incidentGps: r.latitude && r.longitude ? { lat: Number(r.latitude), lon: Number(r.longitude) } : null,
+                mediaFiles: r.media_files || [],
+                otherLocation: r.location_other || ""
             };
         });
 
@@ -264,6 +267,39 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
         reports.set(r.id, r);
     }
 
+    // In-memory student store
+    const students = new Map();
+    const mockNames = [
+        "Abebe Bekele", "Aster Awoke", "Almaz Tafese", "Dawit Lema", "Yosef Assefa",
+        "Solomon Tekle", "Kidist Tilahun", "Helen Berhe", "Bereket Desta", "Tariku Mulugeta",
+        "Selam Kebede", "Tsion Hailu", "Hana Girma", "Abel Tesfaye", "Elias Wolde",
+        "Martha Daniel", "Tigist Getachew", "Usmael Kedir", "Melkamu Alemu", "Biniam Yosef"
+    ];
+    const mockDepts = [
+        "Computer Science", "Software Engineering", "Electrical Engineering", 
+        "Information Systems", "Mechanical Engineering"
+    ];
+
+    for (let i = 1; i <= 20; i++) {
+        const name = mockNames[i - 1];
+        const studentId = `STU${10000 + i}`;
+        const email = `${name.toLowerCase().replace(" ", ".")}@kewars.edu`;
+        const department = mockDepts[(i - 1) % mockDepts.length];
+        const classYear = ((i - 1) % 5) + 1; // 1 to 5
+        const status = i % 8 === 0 ? "inactive" : "active"; // mostly active
+        
+        students.set(i, {
+            id: i,
+            student_id: studentId,
+            name,
+            email,
+            department,
+            class_year: classYear,
+            status,
+            created_at: new Date(Date.now() - i * 86400000 * 5).toISOString()
+        });
+    }
+
     // Utility: build aggregations for facets used by frontend
     function buildAggregations(list) {
         const aggs = {
@@ -429,6 +465,116 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
         return res.json(updated);
     });
 
+    // ---------------- SEARCH STUDENTS ----------------
+    // POST /api/students/search
+    app.post("/api/students/search", requireAuth, (req, res) => {
+        try {
+            const { page = 1, size = 10, query = "", department = "All", class_year = "All", status = "All" } = req.body || {};
+            let list = Array.from(students.values());
+
+            // Search query filter (matches name or student_id)
+            if (query) {
+                const q = query.toLowerCase();
+                list = list.filter((s) => 
+                    s.name.toLowerCase().includes(q) || 
+                    s.student_id.toLowerCase().includes(q)
+                );
+            }
+
+            // Department filter
+            if (department && department !== "All") {
+                list = list.filter((s) => s.department === department);
+            }
+
+            // Class year filter
+            if (class_year && class_year !== "All") {
+                list = list.filter((s) => s.class_year === parseInt(class_year, 10));
+            }
+
+            // Status filter
+            if (status && status !== "All") {
+                list = list.filter((s) => s.status === status);
+            }
+
+            // Sort by created_at desc
+            list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            const total = list.length;
+            const start = (page - 1) * size;
+            const paginated = list.slice(start, start + size);
+
+            return res.json({
+                students: paginated,
+                total
+            });
+        } catch (err) {
+            console.error("Mock search students error", err);
+            return res.status(500).json({ error: "Search failed" });
+        }
+    });
+
+    // ---------------- ENROLL STUDENT ----------------
+    // POST /api/students
+    app.post("/api/students", requireAuth, (req, res) => {
+        try {
+            const { student_id, name, email, department, class_year, status = "active" } = req.body || {};
+
+            if (!student_id || !name || !department || !class_year) {
+                return res.status(400).json({ error: "Student ID, Name, Department, and Class Year are required" });
+            }
+
+            // Check uniqueness
+            const exists = Array.from(students.values()).some((s) => s.student_id.toLowerCase() === student_id.toLowerCase());
+            if (exists) {
+                return res.status(400).json({ error: "A student with this Student ID is already enrolled." });
+            }
+
+            const newId = Math.max(...Array.from(students.keys()), 0) + 1;
+            const newStudent = {
+                id: newId,
+                student_id: student_id.trim(),
+                name: name.trim(),
+                email: email ? email.trim() : null,
+                department,
+                class_year: parseInt(class_year, 10),
+                status,
+                created_at: new Date().toISOString()
+            };
+
+            students.set(newId, newStudent);
+            return res.status(201).json({ message: "Student enrolled successfully", student: newStudent });
+        } catch (err) {
+            console.error("Mock enroll student error", err);
+            return res.status(500).json({ error: "Enrollment failed" });
+        }
+    });
+
+    // ---------------- TOGGLE STUDENT STATUS ----------------
+    // PUT /api/students/:id/status
+    app.put("/api/students/:id/status", requireAuth, (req, res) => {
+        try {
+            const id = parseInt(req.params.id, 10);
+            const { status } = req.body || {};
+
+            if (!status) {
+                return res.status(400).json({ error: "Status is required" });
+            }
+
+            const student = students.get(id);
+            if (!student) {
+                return res.status(404).json({ error: "Student not found" });
+            }
+
+            student.status = status;
+            students.set(id, student);
+
+            return res.json({ message: `Student status updated to ${status}`, student });
+        } catch (err) {
+            console.error("Mock student status error", err);
+            return res.status(500).json({ error: "Update failed" });
+        }
+    });
+
     // health endpoint specific to mock API
     app.get("/api/health", (req, res) => res.json({ ok: true }));
 
@@ -452,6 +598,9 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
 
      // Use DB-backed reports routes when not using in-memory mock
      app.use("/api/reports", reportsRoutes);
+
+     // Use DB-backed students routes when not using in-memory mock
+     app.use("/api/students", studentsRoutes);
  
      // Serve React build when available
      const webBuildPath = path.join(__dirname, "..", "web", "build");

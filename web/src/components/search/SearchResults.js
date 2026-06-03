@@ -304,9 +304,9 @@ const SearchResults = ({ results = [] }) => {
                     >
                       <CardContent sx={{ flexGrow: 1, pb: 1 }}>
                         {/* Tags / Badges Header Row */}
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                          <Stack direction="row" spacing={0.5} sx={{ minWidth: 0 }}>
-                            {result.categories?.raw?.slice(0, 2).map((category, catIndex) => (
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+                          <Stack direction="row" spacing={0.5} sx={{ minWidth: 0, flexWrap: 'wrap', gap: 0.5 }}>
+                            {(Array.isArray(result.categories?.raw) ? result.categories.raw : (typeof result.categories?.raw === 'string' ? [result.categories.raw] : [])).slice(0, 2).map((category, catIndex) => (
                               <Chip 
                                 key={catIndex} 
                                 label={config.categories[category]?.label.en || category} 
@@ -369,29 +369,37 @@ const SearchResults = ({ results = [] }) => {
                       <Divider sx={{ mt: 'auto' }} />
 
                       {/* Actions Footer Bar */}
-                      <CardActions sx={{ px: 2, py: 1.5, justifyContent: 'space-between', bgcolor: '#f9fafb' }}>
+                      <CardActions sx={{ px: 1.5, py: 1.2, justifyContent: 'space-between', bgcolor: '#f9fafb', flexWrap: 'nowrap' }}>
                         <Button 
                           size="small" 
                           variant="contained" 
-                          startIcon={<VisibilityIcon />}
+                          startIcon={<VisibilityIcon sx={{ fontSize: '0.9rem !important' }} />}
                           onClick={() => viewDetailClicked(result.reportId?.raw)}
-                          sx={{ borderRadius: "8px", fontWeight: 700 }}
+                          sx={{ 
+                            borderRadius: "8px", 
+                            fontWeight: 700,
+                            px: 1.2,
+                            py: 0.6,
+                            fontSize: '0.72rem',
+                            minWidth: 'auto',
+                            whiteSpace: 'nowrap',
+                            lineHeight: 1.2
+                          }}
                         >
                           Details
                         </Button>
-                        <FormGroup>
-                          <FormControlLabel 
-                            control={
-                              <Checkbox 
-                                size="small" 
-                                color="secondary"
-                                onChange={(e) => checkBoxChanged(result.reportId?.raw, e)} 
-                                checked={checkBoxStates[result.reportId?.raw] || false}
-                              />
-                            }
-                            label={<Typography variant="caption" sx={{ fontWeight: 600, color: '#6b7280' }}>Combine?</Typography>} 
+                        <Stack direction="row" spacing={0.2} alignItems="center" sx={{ flexShrink: 0 }}>
+                          <Checkbox 
+                            size="small" 
+                            color="secondary"
+                            onChange={(e) => checkBoxChanged(result.reportId?.raw, e)} 
+                            checked={checkBoxStates[result.reportId?.raw] || false}
+                            sx={{ p: 0.3 }}
                           />
-                        </FormGroup>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: '#6b7280', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
+                            Combine?
+                          </Typography>
+                        </Stack>
                       </CardActions>
                     </Card>
                   </Grid>
@@ -484,29 +492,36 @@ const SearchResults = ({ results = [] }) => {
                               <strong>Has Media:</strong> {result?.hasMedia?.raw ? 'Yes' : 'No'}
                             </Typography>
 
-                            <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 1 }}>
                               <Button 
                                 size="small" 
                                 variant="contained" 
-                                startIcon={<VisibilityIcon />}
+                                startIcon={<VisibilityIcon sx={{ fontSize: '0.9rem !important' }} />}
                                 onClick={() => viewDetailClicked(result.reportId?.raw)}
-                                sx={{ borderRadius: "8px", fontWeight: 700 }}
+                                sx={{ 
+                                  borderRadius: "8px", 
+                                  fontWeight: 700,
+                                  px: 1.5,
+                                  py: 0.7,
+                                  fontSize: '0.75rem',
+                                  minWidth: 'auto',
+                                  whiteSpace: 'nowrap'
+                                }}
                               >
                                 Details
                               </Button>
-                              <FormGroup>
-                                <FormControlLabel 
-                                  control={
-                                    <Checkbox 
-                                      size="small" 
-                                      color="secondary"
-                                      onChange={(e) => checkBoxChanged(result.reportId?.raw, e)} 
-                                      checked={checkBoxStates[result.reportId?.raw] || false}
-                                    />
-                                  }
-                                  label={<Typography variant="caption" sx={{ fontWeight: 600, color: '#6b7280' }}>Combine</Typography>} 
+                              <Stack direction="row" spacing={0.2} alignItems="center">
+                                <Checkbox 
+                                  size="small" 
+                                  color="secondary"
+                                  onChange={(e) => checkBoxChanged(result.reportId?.raw, e)} 
+                                  checked={checkBoxStates[result.reportId?.raw] || false}
+                                  sx={{ p: 0.4 }}
                                 />
-                              </FormGroup>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#6b7280', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                                  Combine
+                                </Typography>
+                              </Stack>
                             </Stack>
                           </Grid>
                         </Grid>
