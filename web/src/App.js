@@ -13,7 +13,6 @@ import ReportDetail from './components/Pages/ReportDetail';
 import CreateReport from './components/Pages/CreateReport';
 import Help from './components/Pages/Help';
 import Account from './components/Pages/Account';
-import Students from './components/Pages/Students';
 import AccessDenied from './components/Pages/AccessDenied';
 import IdleTimeoutConfirm from './components/Dialogs/IdleTimeoutConfirm';
 import PublicDashboard from './components/Pages/PublicDashboard';
@@ -161,7 +160,6 @@ function AppContent() {
   const ProtectedCreateReport = withProtectedRoute(CreateReport);
   const ProtectedHelp = withProtectedRoute(Help);
   const ProtectedAccount = withProtectedRoute(Account);
-  const ProtectedStudents = withProtectedRoute(Students);
 
   return (
     <div>
@@ -206,12 +204,6 @@ function AppContent() {
             path="/reports"
             element={
               <ProtectedReports userRoles={userRoles} pathRoles="analyst,admin" />
-            }
-          />
-          <Route
-            path="/students"
-            element={
-              <ProtectedStudents userRoles={userRoles} pathRoles="analyst,admin" />
             }
           />
           <Route

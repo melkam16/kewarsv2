@@ -23,7 +23,6 @@ import PeopleIcon from "@mui/icons-material/People";
 import HelpIcon from "@mui/icons-material/Help";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
-import SchoolIcon from "@mui/icons-material/School";
 
 import { AuthContext } from "../contexts/AuthContext";
 
@@ -33,7 +32,6 @@ const pages = [
     { name: "Dashboard", path: "/", icon: <DashboardIcon /> },
     { name: "Reports", path: "/reports", icon: <DescriptionIcon /> },
     { name: "Users", path: "/users", role: "admin", icon: <PeopleIcon /> },
-    { name: "Students", path: "/students", icon: <SchoolIcon /> },
     { name: "Help", path: "/help", icon: <HelpIcon /> },
 ];
 
