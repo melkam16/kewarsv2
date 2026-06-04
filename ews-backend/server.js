@@ -114,7 +114,13 @@ app.get("/api/public/reports", async (req, res, next) => {
                 severity: r.severity || "low",
                 categories: r.categories || [],
                 incidentGps: r.latitude && r.longitude ? { lat: Number(r.latitude), lon: Number(r.longitude) } : null,
-                mediaFiles: r.media_files || [],
+                mediaFiles: (r.media_files || []).map(url => {
+                    const prefix = process.env.BLOB_BASE_URL;
+                    if (prefix && !url.startsWith('http')) {
+                        return `${prefix}/${url}`;
+                    }
+                    return url;
+                }),
                 otherLocation: r.location_other || ""
             };
         });

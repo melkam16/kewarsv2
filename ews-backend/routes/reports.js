@@ -36,6 +36,28 @@ async function translateText(text) {
   return text;
 }
 
+function addBlobBaseUrl(url) {
+  if (!url) return url;
+  const prefix = process.env.BLOB_BASE_URL;
+  if (prefix && !url.startsWith('http')) {
+    return `${prefix}/${url}`;
+  }
+  return url;
+}
+
+function stripBlobBaseUrl(url) {
+  if (!url) return url;
+  const prefix = process.env.BLOB_BASE_URL;
+  if (prefix && url.startsWith(prefix)) {
+    let relative = url.substring(prefix.length);
+    if (relative.startsWith('/')) {
+      relative = relative.substring(1);
+    }
+    return relative;
+  }
+  return url;
+}
+
 function dbReportToFrontendReport(db) {
   if (!db) return null;
   return {
@@ -77,7 +99,7 @@ function dbReportToFrontendReport(db) {
       sub: db.analyst_sub
     } : null,
     categories: db.categories || [],
-    mediaFiles: db.media_files || [],
+    mediaFiles: (db.media_files || []).map(addBlobBaseUrl),
     mediaFilesMime: db.media_files_mime || []
   };
 }
@@ -123,7 +145,7 @@ function frontendReportToDbReport(fe) {
     analyst_name: fe.analyst?.name || null,
     analyst_sub: isValidUuid(fe.analyst?.sub) ? fe.analyst.sub : null,
     categories: fe.categories || [],
-    media_files: fe.mediaFiles || [],
+    media_files: (fe.mediaFiles || []).map(stripBlobBaseUrl),
     media_files_mime: fe.mediaFilesMime || []
   };
 }
