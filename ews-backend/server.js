@@ -117,7 +117,15 @@ app.get("/api/public/reports", async (req, res, next) => {
                 mediaFiles: (r.media_files || []).map(url => {
                     const prefix = process.env.BLOB_BASE_URL;
                     if (prefix && !url.startsWith('http')) {
-                        return `${prefix}/${url}`;
+                        const isS3Key = url.startsWith('public/') || 
+                                        url.startsWith('protected/') || 
+                                        (url.startsWith('private/') && url.includes(':'));
+                        if (isS3Key) {
+                            return url;
+                        }
+                        const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+                        const cleanPrefix = prefix.endsWith('/') ? prefix.substring(0, prefix.length - 1) : prefix;
+                        return `${cleanPrefix}/${cleanUrl}`;
                     }
                     return url;
                 }),

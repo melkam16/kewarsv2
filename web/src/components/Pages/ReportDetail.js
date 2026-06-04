@@ -79,7 +79,7 @@ function ReportDetail({ readOnly }) {
         { headers: authHeaders }
       );
 
-      if (res.ok) {
+      if (res.ok && res.status !== 204) {
         const draftData = await res.json();
         if (draftData) {
           setDraft(draftData);

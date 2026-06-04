@@ -75,7 +75,7 @@ function MediaViewer ({links}) {
   const getSignedUrls = async () => {        
     try {
       const urlPromises = links?.map((link) => {
-        if (typeof link === 'string' && (link.startsWith('data:') || link.startsWith('blob:'))) {
+        if (typeof link === 'string' && (link.startsWith('data:') || link.startsWith('blob:') || link.startsWith('http'))) {
           return link;
         }
         const media = link.replace(/^\//, '');
