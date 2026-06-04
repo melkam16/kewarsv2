@@ -10,6 +10,7 @@ import {
   Typography,
   IconButton,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import { 
   CloudUpload as CloudUploadIcon, 
@@ -88,36 +89,71 @@ function CreateReport() {
     validateReport(reportToValidate);
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Data = reader.result;
+    for (const file of files) {
+      const localPreviewUrl = URL.createObjectURL(file);
+      
+      setLocalFiles((prev) => [
+        ...prev,
+        {
+          name: file.name,
+          type: file.type,
+          size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+          preview: localPreviewUrl,
+          loading: true
+        }
+      ]);
 
-        // Add to local preview state
-        setLocalFiles((prev) => [
-          ...prev,
-          {
-            name: file.name,
-            type: file.type,
-            size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
-            preview: base64Data,
+      try {
+        const res = await fetch(`${API_BASE}/reports/upload`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": file.type,
+            "X-File-Name": encodeURIComponent(file.name)
           },
-        ]);
+          body: file
+        });
 
-        // Add to report mediaFiles
+        if (!res.ok) {
+          throw new Error(`Upload failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        const blobUrl = data.url;
+
+        setLocalFiles((prev) => {
+          const updated = [...prev];
+          const matchIdx = updated.findIndex(f => f.preview === localPreviewUrl);
+          if (matchIdx !== -1) {
+            updated[matchIdx] = {
+              ...updated[matchIdx],
+              preview: blobUrl,
+              loading: false
+            };
+          }
+          return updated;
+        });
+
         setReport((prev) => {
-          const updatedMedia = [...(prev.mediaFiles || []), base64Data];
+          const updatedMedia = [...(prev.mediaFiles || []), blobUrl];
           const updatedReport = { ...prev, mediaFiles: updatedMedia };
           validateReport(updatedReport);
           return updatedReport;
         });
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err) {
+        console.error("File upload failed:", err);
+        setLocalFiles((prev) => prev.filter(f => f.preview !== localPreviewUrl));
+        setOutcome({
+          show: true,
+          message: `Failed to upload file ${file.name}: ${err.message}`,
+          type: "error"
+        });
+      }
+    }
   };
 
   const removeFile = (index) => {
@@ -306,17 +342,21 @@ function CreateReport() {
                       </Typography>
                     </Box>
 
-                    <IconButton 
-                      onClick={() => removeFile(idx)} 
-                      size="small" 
-                      sx={{ 
-                        color: '#ef4444', 
-                        bgcolor: 'rgba(239, 68, 68, 0.05)',
-                        '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' }
-                      }}
-                    >
-                      <DeleteIcon size="small" />
-                    </IconButton>
+                    {file.loading ? (
+                      <CircularProgress size={24} sx={{ color: '#06b6d4', mx: 1 }} />
+                    ) : (
+                      <IconButton 
+                        onClick={() => removeFile(idx)} 
+                        size="small" 
+                        sx={{ 
+                          color: '#ef4444', 
+                          bgcolor: 'rgba(239, 68, 68, 0.05)',
+                          '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' }
+                        }}
+                      >
+                        <DeleteIcon size="small" />
+                      </IconButton>
+                    )}
                   </Paper>
                 </Grid>
               );

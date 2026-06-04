@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticate } from '../middleware/auth.js';
 import prisma from '../prisma.js';
 import crypto from 'crypto';
+import { put } from '@vercel/blob';
 
 const router = express.Router();
 
@@ -534,6 +535,36 @@ router.put("/:id", authenticate(), async (req, res) => {
     } catch (err) {
         console.error("Update Report Error:", err);
         res.status(500).json({ error: "Server error" });
+    }
+});
+
+// POST /api/reports/upload (Upload file to Vercel Blob)
+router.post("/upload", authenticate(), express.raw({ type: '*/*', limit: '20mb' }), async (req, res) => {
+    try {
+        const mimeType = req.headers['content-type'] || 'application/octet-stream';
+        const filename = decodeURIComponent(req.headers['x-file-name'] || 'file');
+        
+        const fileBuffer = req.body;
+        if (!fileBuffer || fileBuffer.length === 0) {
+            return res.status(400).json({ error: "Empty file body" });
+        }
+
+        const uniqueFilename = `report-docs/${Date.now()}-${filename}`;
+        
+        console.log(`Uploading ${filename} to Vercel Blob as ${uniqueFilename}...`);
+        
+        const blob = await put(uniqueFilename, fileBuffer, {
+            access: 'public',
+            contentType: mimeType,
+            token: process.env.BLOB_READ_WRITE_TOKEN
+        });
+
+        console.log(`Uploaded successfully. URL: ${blob.url}`);
+
+        res.json({ url: blob.url });
+    } catch (err) {
+        console.error("Vercel Blob Upload Error:", err);
+        res.status(500).json({ error: "File upload failed", details: err.message });
     }
 });
 
