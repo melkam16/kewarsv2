@@ -20,6 +20,21 @@ const isValidUuid = (str) => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 };
 
+async function translateText(text) {
+  if (!text) return "";
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=am&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && data[0]) {
+      return data[0].map(s => s[0]).join('');
+    }
+  } catch (err) {
+    console.error("Auto-translation failed:", err);
+  }
+  return text;
+}
+
 function dbReportToFrontendReport(db) {
   if (!db) return null;
   return {
@@ -328,7 +343,8 @@ router.get("/:id", authenticate(), async (req, res) => {
             }
         });
 
-        if (!report) {
+        let targetReport = report;
+        if (!targetReport) {
             // Fallback to draft if there are no published revisions yet
             const draftReport = await prisma.reports.findFirst({
                 where: {
@@ -339,10 +355,26 @@ router.get("/:id", authenticate(), async (req, res) => {
             if (!draftReport) {
                 return res.status(404).json({ error: "Report not found" });
             }
-            return res.json({ latest: dbReportToFrontendReport(draftReport) });
+            targetReport = draftReport;
         }
 
-        res.json({ latest: dbReportToFrontendReport(report) });
+        const mapped = dbReportToFrontendReport(targetReport);
+        if (mapped) {
+            let autoTranslated = false;
+            if (!mapped.titleEn && mapped.title) {
+                mapped.titleEn = await translateText(mapped.title);
+                autoTranslated = true;
+            }
+            if (!mapped.descriptionEn && mapped.description) {
+                mapped.descriptionEn = await translateText(mapped.description);
+                autoTranslated = true;
+            }
+            if (autoTranslated) {
+                mapped.autoTranslated = true;
+            }
+        }
+
+        res.json({ latest: mapped });
     } catch (err) {
         console.error("Fetch Report Detail Error:", err);
         res.status(500).json({ error: "Server error" });
@@ -367,7 +399,23 @@ router.get("/:id/drafts", authenticate(), async (req, res) => {
             return res.status(204).send();
         }
 
-        res.json(dbReportToFrontendReport(draft));
+        const mapped = dbReportToFrontendReport(draft);
+        if (mapped) {
+            let autoTranslated = false;
+            if (!mapped.titleEn && mapped.title) {
+                mapped.titleEn = await translateText(mapped.title);
+                autoTranslated = true;
+            }
+            if (!mapped.descriptionEn && mapped.description) {
+                mapped.descriptionEn = await translateText(mapped.description);
+                autoTranslated = true;
+            }
+            if (autoTranslated) {
+                mapped.autoTranslated = true;
+            }
+        }
+
+        res.json(mapped);
     } catch (err) {
         console.error("Fetch Draft Error:", err);
         res.status(500).json({ error: "Server error" });

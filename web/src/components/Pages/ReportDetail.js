@@ -46,7 +46,7 @@ function ReportDetail({ readOnly }) {
   const handleConfirmDraftLoad = () => {
     setReport(draft);
     validateReport(draft);
-    setEdited({ draft: false, main: true });
+    setEdited({ draft: draft.autoTranslated || false, main: true });
     setDraft(null);
     setShowDraftConfirm(false);
   };
@@ -61,6 +61,9 @@ function ReportDetail({ readOnly }) {
       const data = await res.json();
       setReport(data.latest);
       validateReport(data.latest);
+      if (data.latest?.autoTranslated) {
+        setEdited({ draft: true, main: true });
+      }
 
       await getDraftReport(data.latest.latestVersion);
     } catch (err) {
