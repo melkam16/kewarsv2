@@ -276,12 +276,7 @@ router.post("/search/reports", authenticate(), async (req, res) => {
         });
     } catch (err) {
         console.error("Search Error:", err);
-        res.status(500).json({ 
-            message: "Error searching reports", 
-            error: err.message, 
-            stack: err.stack,
-            code: err.code 
-        });
+        res.status(500).json({ message: "Error searching reports" });
     }
 });
 
