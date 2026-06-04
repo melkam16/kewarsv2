@@ -554,7 +554,7 @@ router.post("/upload", authenticate(), express.raw({ type: '*/*', limit: '20mb' 
         console.log(`Uploading ${filename} to Vercel Blob as ${uniqueFilename}...`);
         
         const blob = await put(uniqueFilename, fileBuffer, {
-            access: 'public',
+            access: 'private',
             contentType: mimeType,
             token: process.env.BLOB_READ_WRITE_TOKEN
         });
