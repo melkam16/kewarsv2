@@ -19,8 +19,36 @@
       "dest": "ews-backend/server.js"
     },
     {
-      "src": "/(static/.*|.*\\.[a-zA-Z0-9]+)$",
-      "dest": "/web/$1"
+      "src": "/static/(.*)",
+      "dest": "/web/static/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/web/favicon.ico"
+    },
+    {
+      "src": "/logo192.png",
+      "dest": "/web/logo192.png"
+    },
+    {
+      "src": "/logo512.png",
+      "dest": "/web/logo512.png"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/web/manifest.json"
+    },
+    {
+      "src": "/map.html",
+      "dest": "/web/map.html"
+    },
+    {
+      "src": "/robots.txt",
+      "dest": "/web/robots.txt"
+    },
+    {
+      "src": "/topojson.log",
+      "dest": "/web/topojson.log"
     },
     {
       "handle": "filesystem"
