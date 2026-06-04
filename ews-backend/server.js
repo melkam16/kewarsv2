@@ -73,14 +73,40 @@ app.get("/api/public/reports", async (req, res, next) => {
                 status: "published",
                 revision: { not: "draft" }
             },
-            orderBy: { incident_date_time: "desc" }
+            orderBy: { update_timestamp: "desc" }
         });
 
-        const mapped = publishedReports.map((r) => {
+        // Group by report_id and select the latest revision
+        const groupedMap = new Map();
+        for (const r of publishedReports) {
+            const existing = groupedMap.get(r.report_id);
+            if (!existing) {
+                groupedMap.set(r.report_id, r);
+            } else {
+                const existingTime = new Date(existing.update_timestamp || 0).getTime();
+                const rTime = new Date(r.update_timestamp || 0).getTime();
+                if (rTime > existingTime) {
+                    groupedMap.set(r.report_id, r);
+                }
+            }
+        }
+
+        const latestPublishedReports = Array.from(groupedMap.values());
+
+        // Sort by incident_date_time desc overall
+        latestPublishedReports.sort((a, b) => {
+            const tA = new Date(a.incident_date_time || 0).getTime();
+            const tB = new Date(b.incident_date_time || 0).getTime();
+            return tB - tA;
+        });
+
+        const mapped = latestPublishedReports.map((r) => {
             return {
                 id: r.report_id,
                 title: r.title || `Report ${r.report_id}`,
                 description: r.description || "",
+                titleEn: r.title_en || "",
+                descriptionEn: r.description_en || "",
                 incidentDateTime: r.incident_date_time ? r.incident_date_time.toISOString() : new Date().toISOString(),
                 region: r.region || "",
                 zone: r.zone || "",

@@ -65,8 +65,182 @@ ChartJS.register(
   Legend
 );
 
+// ==============================
+// TRANSLATION DICTIONARY
+// ==============================
+const translations = {
+  // Nav bar
+  navTitle: {
+    am: "KEWARS የህዝብ መረጃ",
+    en: "KEWARS Public Hub"
+  },
+  staffPortal: {
+    am: "የሰራተኛ መግቢያ",
+    en: "Staff Portal"
+  },
+  langToggle: {
+    am: "EN",
+    en: "አማ"
+  },
+  langTooltip: {
+    am: "Switch to English",
+    en: "ወደ አማርኛ ቀይር"
+  },
+
+  // Live alert banner
+  liveAlert: {
+    am: "ቀጥታ ማንቂያ",
+    en: "Live Alert"
+  },
+  verifiedOn: {
+    am: "የተረጋገጠ",
+    en: "Verified on"
+  },
+
+  // Header card
+  realTimeActive: {
+    am: "የቅጽበት መረጃ ንቁ ነው",
+    en: "Real-time Feeds Active"
+  },
+  dashboardTitle: {
+    am: "የህዝብ ቅድመ ማስጠንቀቂያ ዳሽቦርድ",
+    en: "Public Early Warning Dashboard"
+  },
+  dashboardSubtitle: {
+    am: "እንኳን ወደ ክፍት የክስተት ሪፖርት ፖርታል በደህና መጡ። ይህ ዳሽቦርድ ሙሉ በሙሉ የተረጋገጡ እና የታተሙ የአካባቢ፣ የሰብአዊ እና የደህንነት ማንቂያዎችን ለማህበረሰብ ደህንነት፣ ለክልላዊ ትብብር እና ለግልጽ የሀብት ስርጭት ያቀርባል።",
+    en: "Welcome to the open-access incident reporting portal. This dashboard plots fully verified and published environmental, humanitarian, and security alerts to promote community safety, regional collaboration, and transparent resource deployments."
+  },
+
+  // KPI cards
+  activeWarnings: {
+    am: "ንቁ ማስጠንቀቂያዎች",
+    en: "Active Warnings"
+  },
+  criticalThreats: {
+    am: "ከፍተኛ ስጋቶች",
+    en: "Critical Threats"
+  },
+  monitoredRegions: {
+    am: "ክልሎች በክትትል",
+    en: "Monitored Regions"
+  },
+  portalStatus: {
+    am: "የፖርታል ሁኔታ",
+    en: "Portal Status"
+  },
+  online: {
+    am: "ንቁ",
+    en: "Online"
+  },
+
+  // Section headings
+  gisMapping: {
+    am: "🗺️ የታተሙ ክስተቶች GIS ካርታ",
+    en: "🗺️ Published Incidents GIS Mapping"
+  },
+  incidentMetrics: {
+    am: "📊 የተጠቃለሉ የክስተት መለኪያዎች",
+    en: "📊 Summarized Incident Metrics"
+  },
+  briefingCatalog: {
+    am: "📁 የታተሙ ክስተቶች ዝርዝር",
+    en: "📁 Published Incidents Briefing Catalog"
+  },
+
+  // Chart titles
+  incidentsByRegion: {
+    am: "ክስተቶች በክልል",
+    en: "Incidents by Region"
+  },
+  byIncidentType: {
+    am: "በክስተት ዓይነት",
+    en: "By Incident Type"
+  },
+  incidentsByYear: {
+    am: "ክስተቶች በዓመት",
+    en: "Incidents by Year"
+  },
+
+  // Report cards & detail
+  location: {
+    am: "ቦታ",
+    en: "Location"
+  },
+  noDescription: {
+    am: "ምንም የክስተት ገለጻ አልተሰጠም።",
+    en: "No incident description provided."
+  },
+  noReports: {
+    am: "በአሁኑ ጊዜ ምንም የታተሙ ሪፖርቶች የሉም።",
+    en: "No published reports are available in the public catalog currently."
+  },
+  exportData: {
+    am: "ውሂብ ላክ",
+    en: "Export Data"
+  },
+  downloadCSV: {
+    am: "CSV አውርድ",
+    en: "Download CSV"
+  },
+  downloadJSON: {
+    am: "JSON አውርድ",
+    en: "Download JSON"
+  },
+
+  // Detail dialog
+  incidentDescription: {
+    am: "ℹ️ የክስተት ገለጻ",
+    en: "ℹ️ Incident Description"
+  },
+  noDescriptionDetail: {
+    am: "ምንም ገለጻ አልተሰጠም።",
+    en: "No description provided."
+  },
+  geographyTimestamp: {
+    am: "📍 ጂኦግራፊ እና ጊዜ",
+    en: "📍 Geography & Timestamp"
+  },
+  incidentLocation: {
+    am: "የክስተት ቦታ",
+    en: "Incident Location"
+  },
+  incidentDateTime: {
+    am: "የክስተት ቀን እና ሰዓት",
+    en: "Incident Date & Time"
+  },
+  attachedEvidence: {
+    am: "📎 የተያያዘ ማስረጃ",
+    en: "📎 Attached Evidence"
+  },
+  noMedia: {
+    am: "ለዚህ ማንቂያ ምንም ሚዲያ አልተጫነም።",
+    en: "No media attachments uploaded for this alert."
+  },
+  viewReportDetails: {
+    am: "ዝርዝር ይመልከቱ",
+    en: "View Report Details"
+  },
+
+  // English translation labels in dialog
+  englishTranslation: {
+    am: "🌐 የእንግሊዝኛ ትርጉም",
+    en: "🌐 English Translation"
+  },
+  titleEnLabel: {
+    am: "ርዕስ (እንግሊዝኛ)",
+    en: "Title (English)"
+  },
+  descriptionEnLabel: {
+    am: "ገለጻ (እንግሊዝኛ)",
+    en: "Description (English)"
+  },
+};
+
+// Helper to get translated text
+const t = (key, lang) => translations[key]?.[lang] || translations[key]?.en || key;
+
 // Google Incidents Map Component for Public Dashboard
-const PublicIncidentMap = ({ results, onViewDetails }) => {
+const PublicIncidentMap = ({ results, onViewDetails, lang }) => {
   const ref = React.useRef(null);
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
@@ -119,6 +293,11 @@ const PublicIncidentMap = ({ results, onViewDetails }) => {
       const severity = r.severity?.toLowerCase() || "low";
       const markerColor = severity === "high" ? "#991b1b" : severity === "medium" ? "#ea580c" : "#2563eb";
 
+      const displayTitle = lang === 'en' ? (r.titleEn || r.title) : r.title;
+      const regionLabel = lang === 'en' ? 'Region' : 'ክልል';
+      const zoneLabel = lang === 'en' ? 'Zone' : 'ዞን';
+      const dateLabel = lang === 'en' ? 'Date' : 'ቀን';
+
       const svgMarker = {
         path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
         fillColor: markerColor,
@@ -133,23 +312,23 @@ const PublicIncidentMap = ({ results, onViewDetails }) => {
         position: { lat, lng: lon },
         map: map,
         icon: svgMarker,
-        title: r.title || "Incident"
+        title: displayTitle || "Incident"
       });
 
       marker.addListener("click", () => {
         if (infoWindow) {
           const contentString = `
             <div style="font-family: 'Inter', sans-serif; padding: 10px; color: #111827; max-width: 250px;">
-              <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px;">${r.title || 'Incident'}</h4>
+              <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px;">${displayTitle || 'Incident'}</h4>
               <div style="margin-bottom: 6px;">
                 <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; background-color: ${markerColor}15; color: ${markerColor}; text-transform: uppercase; letter-spacing: 0.04em;">
                   ${severity}
                 </span>
               </div>
               <p style="margin: 0 0 10px 0; font-size: 11px; color: #6b7280; line-height: 1.5;">
-                <strong style="color: #374151;">Region:</strong> ${r.region || 'N/A'}<br/>
-                <strong style="color: #374151;">Zone:</strong> ${r.zone || 'N/A'}<br/>
-                <strong style="color: #374151;">Date:</strong> ${new Date(r.incidentDateTime).toLocaleDateString()}
+                <strong style="color: #374151;">${regionLabel}:</strong> ${r.region || 'N/A'}<br/>
+                <strong style="color: #374151;">${zoneLabel}:</strong> ${r.zone || 'N/A'}<br/>
+                <strong style="color: #374151;">${dateLabel}:</strong> ${new Date(r.incidentDateTime).toLocaleDateString()}
               </p>
               ${onViewDetails ? `
               <button 
@@ -158,7 +337,7 @@ const PublicIncidentMap = ({ results, onViewDetails }) => {
                 onmouseover="this.style.backgroundColor='#111827'"
                 onmouseout="this.style.backgroundColor='#1f2937'"
               >
-                View Report Details
+                ${t('viewReportDetails', lang)}
               </button>
               ` : ''}
             </div>
@@ -199,7 +378,7 @@ const PublicIncidentMap = ({ results, onViewDetails }) => {
         map.setZoom(6);
       }
     }
-  }, [map, results]);
+  }, [map, results, lang]);
 
   return <div ref={ref} style={{ width: "100%", height: "100%", borderRadius: "12px" }} />;
 };
@@ -219,6 +398,18 @@ function PublicDashboard() {
 
   // Export menu anchor
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
+
+  // Language state — default Amharic
+  const [lang, setLang] = useState('am');
+
+  const toggleLang = () => setLang(prev => prev === 'am' ? 'en' : 'am');
+
+  // Helper to get display title/description based on language
+  const getTitle = (r) => lang === 'en' ? (r.titleEn || r.title) : r.title;
+  const getDescription = (r) => lang === 'en' ? (r.descriptionEn || r.description) : r.description;
+  const getCategoryLabel = (c) => lang === 'en' 
+    ? (config.categories[c]?.label.en || c)
+    : (config.categories[c]?.label.am || config.categories[c]?.label.en || c);
 
   useEffect(() => {
     fetchPublicReports();
@@ -252,9 +443,10 @@ function PublicDashboard() {
   const exportAsCSV = () => {
     setExportAnchorEl(null);
     if (!reports.length) return;
-    const headers = ['Title', 'Region', 'Zone', 'Woreda', 'Severity', 'Categories', 'Incident Date', 'Description'];
+    const headers = ['Title', 'Title (English)', 'Region', 'Zone', 'Woreda', 'Severity', 'Categories', 'Incident Date', 'Description', 'Description (English)'];
     const rows = reports.map(r => [
       `"${(r.title || '').replace(/"/g, '""')}"`,
+      `"${(r.titleEn || '').replace(/"/g, '""')}"`,
       `"${r.region || ''}"`,
       `"${r.zone || ''}"`,
       `"${r.woreda || ''}"`,
@@ -262,6 +454,7 @@ function PublicDashboard() {
       `"${(r.categories || []).map(c => config.categories[c]?.label.en || c).join('; ')}"`,
       `"${r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleDateString() : ''}"`,
       `"${(r.description || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+      `"${(r.descriptionEn || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`,
     ]);
     const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -278,6 +471,7 @@ function PublicDashboard() {
     if (!reports.length) return;
     const sanitized = reports.map(r => ({
       title: r.title,
+      titleEn: r.titleEn || '',
       region: r.region,
       zone: r.zone,
       woreda: r.woreda,
@@ -285,6 +479,7 @@ function PublicDashboard() {
       categories: (r.categories || []).map(c => config.categories[c]?.label.en || c),
       incidentDateTime: r.incidentDateTime,
       description: r.description,
+      descriptionEn: r.descriptionEn || '',
     }));
     const jsonStr = JSON.stringify(sanitized, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -400,24 +595,55 @@ function PublicDashboard() {
               </svg>
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.01em', color: '#ffffff' }}>
-              KEWARS Public Hub
+              {t('navTitle', lang)}
             </Typography>
           </Stack>
           
-          <Button 
-            variant="contained" 
-            startIcon={<LoginIcon />}
-            onClick={() => navigate("/login")}
-            sx={{ 
-              borderRadius: "8px", 
-              fontWeight: 600, 
-              bgcolor: '#2563eb', 
-              color: '#ffffff',
-              '&:hover': { bgcolor: '#1d4ed8' }
-            }}
-          >
-            Staff Portal
-          </Button>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            {/* Language Toggle Button */}
+            <Button
+              variant="outlined"
+              onClick={toggleLang}
+              sx={{
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                minWidth: 'auto',
+                px: 2,
+                py: 0.8,
+                borderColor: 'rgba(255, 255, 255, 0.25)',
+                color: '#ffffff',
+                bgcolor: 'rgba(255, 255, 255, 0.06)',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': { 
+                  bgcolor: 'rgba(255, 255, 255, 0.12)', 
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                  transform: 'translateY(-1px)'
+                }
+              }}
+              title={t('langTooltip', lang)}
+            >
+              <Box component="span" sx={{ mr: 0.8, fontSize: '1rem' }}>
+                {lang === 'am' ? '🇬🇧' : '🇪🇹'}
+              </Box>
+              {t('langToggle', lang)}
+            </Button>
+
+            <Button 
+              variant="contained" 
+              startIcon={<LoginIcon />}
+              onClick={() => navigate("/login")}
+              sx={{ 
+                borderRadius: "8px", 
+                fontWeight: 600, 
+                bgcolor: '#2563eb', 
+                color: '#ffffff',
+                '&:hover': { bgcolor: '#1d4ed8' }
+              }}
+            >
+              {t('staffPortal', lang)}
+            </Button>
+          </Stack>
         </Toolbar>
       </AppBar>
 
@@ -456,10 +682,10 @@ function PublicDashboard() {
                   }
                 }} 
               />
-              Live Alert
+              {t('liveAlert', lang)}
             </Box>
             <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              ⚠️ {reports[tickerIndex].title} ({reports[tickerIndex].region}) — Verified on {new Date(reports[tickerIndex].incidentDateTime).toLocaleDateString()}
+              ⚠️ {getTitle(reports[tickerIndex])} ({reports[tickerIndex].region}) — {t('verifiedOn', lang)} {new Date(reports[tickerIndex].incidentDateTime).toLocaleDateString()}
             </Typography>
           </Stack>
         </Box>
@@ -496,14 +722,14 @@ function PublicDashboard() {
               }} 
             />
             <Typography variant="caption" sx={{ fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Real-time Feeds Active
+              {t('realTimeActive', lang)}
             </Typography>
           </Stack>
           <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: "-0.03em", mb: 1, color: '#111827' }}>
-            Public Early Warning Dashboard
+            {t('dashboardTitle', lang)}
           </Typography>
           <Typography variant="body1" sx={{ color: '#6b7280', maxWidth: '800px', lineHeight: 1.7 }}>
-            Welcome to the open-access incident reporting portal. This dashboard plots fully verified and published environmental, humanitarian, and security alerts to promote community safety, regional collaboration, and transparent resource deployments.
+            {t('dashboardSubtitle', lang)}
           </Typography>
         </Paper>
 
@@ -532,7 +758,7 @@ function PublicDashboard() {
                 >
                   <Box>
                     <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
-                      Active Warnings
+                      {t('activeWarnings', lang)}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: '#111827', mt: 0.5 }}>
                       {reports.length}
@@ -561,7 +787,7 @@ function PublicDashboard() {
                 >
                   <Box>
                     <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
-                      Critical Threats
+                      {t('criticalThreats', lang)}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: '#991b1b', mt: 0.5 }}>
                       {reports.filter(r => r.severity?.toLowerCase() === 'high').length}
@@ -590,7 +816,7 @@ function PublicDashboard() {
                 >
                   <Box>
                     <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
-                      Monitored Regions
+                      {t('monitoredRegions', lang)}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: '#111827', mt: 0.5 }}>
                       {new Set(reports.map(r => r.region).filter(Boolean)).size}
@@ -619,7 +845,7 @@ function PublicDashboard() {
                 >
                   <Box>
                     <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
-                      Portal Status
+                      {t('portalStatus', lang)}
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
                       <Box 
@@ -637,7 +863,7 @@ function PublicDashboard() {
                         }}
                       />
                       <Typography variant="body1" sx={{ fontWeight: 700, color: '#059669', fontSize: '0.9rem', textTransform: 'uppercase' }}>
-                        Online
+                        {t('online', lang)}
                       </Typography>
                     </Stack>
                   </Box>
@@ -652,11 +878,11 @@ function PublicDashboard() {
               {/* 1. INTERACTIVE GIS INCIDENT DISTRIBUTION MAP */}
               <Grid item xs={12}>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: '#111827', mb: 2, letterSpacing: '-0.02em' }}>
-                  🗺️ Published Incidents GIS Mapping
+                  {t('gisMapping', lang)}
                 </Typography>
                 <Card sx={{ width: '100%', aspectRatio: '1/1', maxHeight: '550px', mx: 'auto', p: 0.5, borderRadius: 3, border: '1px solid #d1d5db' }}>
                   <Wrapper apiKey={"AIzaSyAXk_dX6DI6jxcUdjpvKqGBiKIKjoQoMOs"}>
-                    <PublicIncidentMap results={reports} onViewDetails={(r) => setSelectedReport(r)} />
+                    <PublicIncidentMap results={reports} onViewDetails={(r) => setSelectedReport(r)} lang={lang} />
                   </Wrapper>
                 </Card>
               </Grid>
@@ -664,7 +890,7 @@ function PublicDashboard() {
               {/* 2. SUMMARIZED CHARTS ROW */}
               <Grid item xs={12}>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: '#111827', mt: 2, mb: 2, letterSpacing: '-0.02em' }}>
-                  📊 Summarized Incident Metrics
+                  {t('incidentMetrics', lang)}
                 </Typography>
                 <Grid container spacing={3}>
                   {/* Region Chart */}
@@ -674,7 +900,7 @@ function PublicDashboard() {
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                           <LocationIcon sx={{ color: '#2563eb' }} />
                           <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
-                            Incidents by Region
+                            {t('incidentsByRegion', lang)}
                           </Typography>
                         </Stack>
                         <Divider sx={{ mb: 2 }} />
@@ -705,7 +931,7 @@ function PublicDashboard() {
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                           <PieChartIcon sx={{ color: '#991b1b' }} />
                           <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
-                            By Incident Type
+                            {t('byIncidentType', lang)}
                           </Typography>
                         </Stack>
                         <Divider sx={{ mb: 2 }} />
@@ -732,7 +958,7 @@ function PublicDashboard() {
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                           <TimelineIcon sx={{ color: '#ea580c' }} />
                           <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827' }}>
-                            Incidents by Year
+                            {t('incidentsByYear', lang)}
                           </Typography>
                         </Stack>
                         <Divider sx={{ mb: 2 }} />
@@ -762,7 +988,7 @@ function PublicDashboard() {
               <Grid item xs={12}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2, mb: 2 }}>
                   <Typography variant="h5" sx={{ fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>
-                    📁 Published Incidents Briefing Catalog
+                    {t('briefingCatalog', lang)}
                   </Typography>
                   
                   {/* Data Export Service Buttons */}
@@ -784,7 +1010,7 @@ function PublicDashboard() {
                           }
                         }}
                       >
-                        Export Data
+                        {t('exportData', lang)}
                       </Button>
                       <Menu
                         anchorEl={exportAnchorEl}
@@ -796,11 +1022,11 @@ function PublicDashboard() {
                       >
                         <MenuItem onClick={exportAsCSV}>
                           <ListItemIcon><CsvIcon sx={{ color: '#059669' }} /></ListItemIcon>
-                          <ListItemText primary="Download CSV" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem' }} />
+                          <ListItemText primary={t('downloadCSV', lang)} primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem' }} />
                         </MenuItem>
                         <MenuItem onClick={exportAsJSON}>
                           <ListItemIcon><JsonIcon sx={{ color: '#2563eb' }} /></ListItemIcon>
-                          <ListItemText primary="Download JSON" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem' }} />
+                          <ListItemText primary={t('downloadJSON', lang)} primaryTypographyProps={{ fontWeight: 600, fontSize: '0.88rem' }} />
                         </MenuItem>
                       </Menu>
                     </>
@@ -810,7 +1036,7 @@ function PublicDashboard() {
                 {reports.length === 0 ? (
                   <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
                     <Typography variant="body1" color="text.secondary">
-                      No published reports are available in the public catalog currently.
+                      {t('noReports', lang)}
                     </Typography>
                   </Paper>
                 ) : (
@@ -852,7 +1078,7 @@ function PublicDashboard() {
                                   {r.categories.map((c, catIdx) => (
                                     <Chip 
                                       key={catIdx} 
-                                      label={config.categories[c]?.label.en || c} 
+                                      label={getCategoryLabel(c)} 
                                       size="small" 
                                       variant="outlined" 
                                       sx={{ fontWeight: 600, height: 22, borderColor: '#d1d5db', color: '#374151' }}
@@ -870,16 +1096,16 @@ function PublicDashboard() {
                               <Divider sx={{ mb: 2 }} />
 
                               <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', mb: 1 }}>
-                                {r.title}
+                                {getTitle(r)}
                               </Typography>
                               <Typography variant="body2" sx={{ color: '#6b7280', mb: 2, lineHeight: 1.6 }}>
-                                {r.description || 'No incident description provided.'}
+                                {getDescription(r) || t('noDescription', lang)}
                               </Typography>
 
                               <Stack direction="row" spacing={0.5} alignItems="center">
                                 <LocationIcon sx={{ fontSize: 16, color: '#2563eb' }} />
                                 <Typography variant="caption" sx={{ fontWeight: 600, color: '#6b7280' }}>
-                                  Location: {r.region || 'N/A'}, {r.zone || 'N/A'}, {r.woreda || 'N/A'}
+                                  {t('location', lang)}: {r.region || 'N/A'}, {r.zone || 'N/A'}, {r.woreda || 'N/A'}
                                 </Typography>
                               </Stack>
                             </CardContent>
@@ -940,7 +1166,7 @@ function PublicDashboard() {
                   {selectedReport.categories.map((c, idx) => (
                     <Chip 
                       key={idx} 
-                      label={config.categories[c]?.label.en || c} 
+                      label={getCategoryLabel(c)} 
                       size="small" 
                       variant="outlined" 
                       sx={{ color: '#93c5fd', borderColor: '#3b82f6', fontWeight: 600, height: 22 }}
@@ -948,7 +1174,7 @@ function PublicDashboard() {
                   ))}
                 </Stack>
                 <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.3 }}>
-                  {selectedReport.title}
+                  {getTitle(selectedReport)}
                 </Typography>
               </Box>
               <IconButton 
@@ -969,17 +1195,46 @@ function PublicDashboard() {
                 <Grid item xs={12} md={7}>
                   <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #e5e7eb', bgcolor: '#ffffff', mb: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827', mb: 2 }}>
-                      ℹ️ Incident Description
+                      {t('incidentDescription', lang)}
                     </Typography>
                     <Typography variant="body1" sx={{ color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                      {selectedReport.description || 'No description provided.'}
+                      {getDescription(selectedReport) || t('noDescriptionDetail', lang)}
                     </Typography>
                   </Paper>
+
+                  {/* Show English translation section in dialog if viewing in Amharic and translation exists */}
+                  {lang === 'am' && (selectedReport.titleEn || selectedReport.descriptionEn) && (
+                    <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(6, 182, 212, 0.25)', bgcolor: 'rgba(6, 182, 212, 0.02)', mb: 3 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827', mb: 2 }}>
+                        {t('englishTranslation', lang)}
+                      </Typography>
+                      {selectedReport.titleEn && (
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {t('titleEnLabel', lang)}
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937' }}>
+                            {selectedReport.titleEn}
+                          </Typography>
+                        </Box>
+                      )}
+                      {selectedReport.descriptionEn && (
+                        <Box>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {t('descriptionEnLabel', lang)}
+                          </Typography>
+                          <Typography variant="body1" sx={{ color: '#374151', whiteSpace: 'pre-wrap', lineHeight: 1.7, mt: 0.5 }}>
+                            {selectedReport.descriptionEn}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Paper>
+                  )}
 
                   {/* Metadata fields */}
                   <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #e5e7eb', bgcolor: '#ffffff' }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827', mb: 2.5 }}>
-                      📍 Geography & Timestamp
+                      {t('geographyTimestamp', lang)}
                     </Typography>
                     <Stack spacing={2.5}>
                       <Stack direction="row" spacing={2} alignItems="center">
@@ -988,7 +1243,7 @@ function PublicDashboard() {
                         </Box>
                         <Box>
                           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                            Incident Location
+                            {t('incidentLocation', lang)}
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937' }}>
                             {selectedReport.region || 'N/A'}, {selectedReport.zone || 'N/A'}, {selectedReport.woreda || 'N/A'}
@@ -1003,7 +1258,7 @@ function PublicDashboard() {
                         </Box>
                         <Box>
                           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                            Incident Date & Time
+                            {t('incidentDateTime', lang)}
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937' }}>
                             {new Date(selectedReport.incidentDateTime).toLocaleString()}
@@ -1020,7 +1275,7 @@ function PublicDashboard() {
                   {selectedReport.mediaFiles && selectedReport.mediaFiles.length > 0 ? (
                     <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #e5e7eb', bgcolor: '#ffffff', mb: 3 }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827', mb: 2 }}>
-                        📎 Attached Evidence ({selectedReport.mediaFiles.length})
+                        {t('attachedEvidence', lang)} ({selectedReport.mediaFiles.length})
                       </Typography>
                       <Box sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #d1d5db' }}>
                         <MediaViewer links={selectedReport.mediaFiles} />
@@ -1029,7 +1284,7 @@ function PublicDashboard() {
                   ) : (
                     <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #e5e7eb', bgcolor: '#ffffff', mb: 3, textAlign: 'center', py: 4 }}>
                       <Typography variant="body2" color="text.secondary">
-                        No media attachments uploaded for this alert.
+                        {t('noMedia', lang)}
                       </Typography>
                     </Paper>
                   )}
@@ -1037,7 +1292,7 @@ function PublicDashboard() {
                   {/* Micro Incident Map */}
                   <Paper sx={{ p: 0.5, borderRadius: 3, border: '1px solid #d1d5db', bgcolor: '#ffffff', width: '100%', aspectRatio: '1/1', maxHeight: '280px' }}>
                     <Wrapper apiKey={"AIzaSyAXk_dX6DI6jxcUdjpvKqGBiKIKjoQoMOs"}>
-                      <PublicIncidentMap results={[selectedReport]} mapTypeId="satellite" />
+                      <PublicIncidentMap results={[selectedReport]} mapTypeId="satellite" lang={lang} />
                     </Wrapper>
                   </Paper>
                 </Grid>

@@ -139,6 +139,92 @@ function Report({ report, readOnly, onChange, hideReportDate = false }) {
             value={report?.description || ''}
             onChange={fieldChanged} rows={4} />
         </Grid>
+        <Grid item xs={fullWidth}>
+          <Accordion 
+            sx={{ 
+              border: '1px solid #e2e8f0', 
+              borderRadius: '12px !important', 
+              overflow: 'hidden',
+              '&:before': { display: 'none' },
+              boxShadow: 'none',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': { borderColor: '#06b6d4' }
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="translation-content"
+              id="translation-header"
+              sx={{ 
+                bgcolor: 'rgba(6, 182, 212, 0.03)',
+                '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.06)' }
+              }}
+            >
+              <Badge 
+                badgeContent={(report?.titleEn || report?.descriptionEn) ? "✓" : "0"} 
+                color={(report?.titleEn || report?.descriptionEn) ? "success" : "default"}
+                sx={{ mr: 1 }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box 
+                    component="span" 
+                    sx={{ 
+                      fontSize: '1.1rem', 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      color: '#06b6d4'
+                    }}
+                  >
+                    🌐
+                  </Box>
+                  <Box fontWeight='fontWeightBold' sx={{ color: '#0f172a' }}>
+                    English Translation
+                  </Box>
+                </Box>
+              </Badge>
+            </AccordionSummary>
+            <AccordionDetails sx={{ p: 2.5 }}>
+              <Stack direction="column" spacing={2}>
+                <Box sx={{ 
+                  p: 1.5, 
+                  borderRadius: 2, 
+                  bgcolor: 'rgba(6, 182, 212, 0.04)', 
+                  border: '1px solid rgba(6, 182, 212, 0.12)',
+                  mb: 1
+                }}>
+                  <Box sx={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                    Provide the English translation of the title and description. This will be displayed on the public dashboard when users switch to English.
+                  </Box>
+                </Box>
+                <TextField 
+                  fullWidth 
+                  name="titleEn" 
+                  id="title-en" 
+                  label="Title (English Translation)" 
+                  variant="outlined" 
+                  disabled={readOnly}
+                  value={report?.titleEn || ''} 
+                  onChange={fieldChanged}
+                  placeholder="Enter English translation of the title..."
+                />
+                <TextField 
+                  fullWidth 
+                  disabled={readOnly} 
+                  name="descriptionEn" 
+                  id="description-en" 
+                  label="Description (English Translation)" 
+                  variant="outlined" 
+                  multiline 
+                  autoComplete='off'
+                  value={report?.descriptionEn || ''}
+                  onChange={fieldChanged} 
+                  rows={4} 
+                  placeholder="Enter English translation of the description..."
+                />
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
         <Grid item xs={fullWidth} >
           <MapContainer point={report?.incidentGps} initialZoom={6}
             onChange={gpsChanged} readOnly={readOnly} name="incidentGps"/>

@@ -42,6 +42,8 @@ function CreateReport() {
     reporter: user ? { sub: user.id || user.sub, name: user.name } : null,
     title: "",
     description: "",
+    titleEn: "",
+    descriptionEn: "",
     categories: [],
     incidentLocation: { region: "", zone: "", woreda: "", other: "" },
     incidentGps: { lat: 9.145, lon: 40.4896 }, // Ethiopia center default

@@ -14,6 +14,8 @@ model reports {
   severity                   String?   @db.VarChar(20)
   title                      String?
   description                String?
+  title_en                   String?
+  description_en             String?
   notes                      String?
   eyewitness                 Boolean?
   has_media                  Boolean?

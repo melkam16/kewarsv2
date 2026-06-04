@@ -30,6 +30,8 @@ function dbReportToFrontendReport(db) {
     severity: db.severity,
     title: db.title,
     description: db.description,
+    titleEn: db.title_en,
+    descriptionEn: db.description_en,
     notes: db.notes,
     eyewitness: db.eyewitness,
     hasMedia: db.has_media,
@@ -82,6 +84,8 @@ function frontendReportToDbReport(fe) {
     severity: fe.severity || null,
     title: fe.title || null,
     description: fe.description || null,
+    title_en: fe.titleEn || null,
+    description_en: fe.descriptionEn || null,
     notes: fe.notes || null,
     eyewitness: fe.eyewitness !== undefined ? fe.eyewitness : null,
     has_media: fe.hasMedia !== undefined ? fe.hasMedia : (fe.mediaFiles && fe.mediaFiles.length > 0),
@@ -130,11 +134,34 @@ router.post("/search/reports", authenticate(), async (req, res) => {
             if (dbField === "byRegion") dbField = "region";
             if (dbField === "incidentDateTime") dbField = "incident_date_time";
 
+            if (dbField === "incident_date_time") {
+                const cleanValues = filter.values.filter(v => typeof v === 'string' && v.includes('-'));
+                const orConditions = cleanValues.map(val => {
+                    const [year, month] = val.split('-').map(Number);
+                    const startDate = new Date(Date.UTC(year, month - 1, 1));
+                    const endDate = new Date(Date.UTC(year, month, 1));
+                    return {
+                        incident_date_time: {
+                            gte: startDate,
+                            lt: endDate
+                        }
+                    };
+                });
+                if (orConditions.length > 0) {
+                    if (!where.OR) where.OR = [];
+                    where.OR.push(...orConditions);
+                }
+                return;
+            }
+
             if (filter.type === "any") {
-                if (dbField === "categories") {
-                    where[dbField] = { hasSome: filter.values };
-                } else {
-                    where[dbField] = { in: filter.values };
+                const cleanValues = filter.values.filter(v => v !== null && v !== undefined);
+                if (cleanValues.length > 0) {
+                    if (dbField === "categories") {
+                        where[dbField] = { hasSome: cleanValues };
+                    } else {
+                        where[dbField] = { in: cleanValues };
+                    }
                 }
             }
         });
