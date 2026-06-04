@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   Stack,
   FormControl, 
@@ -11,12 +11,25 @@ import {
   AccordionSummary, Accordion, AccordionDetails,
   Badge,
   Divider,
+  CircularProgress,
+  Paper,
+  IconButton,
+  Typography,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   LocalizationProvider,
   DateTimePicker,
 } from '@mui/lab'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { 
+  CloudUpload as CloudUploadIcon, 
+  Delete as DeleteIcon, 
+  Movie as MovieIcon, 
+  Description as DescriptionIcon,
+  AudioFile as AudioIcon
+} from "@mui/icons-material";
 import set from 'lodash.set';
 import get from 'lodash.get';
 import DayjsUtils from '@date-io/dayjs';
@@ -28,6 +41,8 @@ import Reporter from './reporter';
 import MediaViewer from "./mediaViewer";
 import ethiopia from './ethiopia.geo.json';
 import config from '../config';
+import { AuthContext } from './contexts/AuthContext';
+import API_BASE from '../api/apiBase';
 
 const fullWidth = 12;
 const halfWidth = fullWidth/2;
@@ -43,6 +58,118 @@ const convertDateTimeToIso8601 = (dateTime) => {
 
 function Report({ report, readOnly, onChange, hideReportDate = false }) {
   const [edited, setEdited] = React.useState(false);
+  const { token } = useContext(AuthContext);
+  const [localFiles, setLocalFiles] = React.useState([]);
+  const [outcome, setOutcome] = React.useState({ show: false, message: "", type: "success" });
+
+  React.useEffect(() => {
+    if (report?.mediaFiles) {
+      setLocalFiles((prev) => {
+        const currentUrls = prev.map(f => f.preview);
+        const reportUrls = report.mediaFiles;
+        
+        const isIdentical = currentUrls.length === reportUrls.length && currentUrls.every((url, i) => url === reportUrls[i]);
+        if (isIdentical) return prev;
+
+        return reportUrls.map(url => {
+          const existing = prev.find(f => f.preview === url);
+          if (existing) return existing;
+
+          let name = "file";
+          try {
+            const parts = url.split('/');
+            const filenamePart = parts[parts.length - 1];
+            name = decodeURIComponent(filenamePart);
+          } catch (e) {}
+
+          let type = "application/octet-stream";
+          const ext = name.split('.').pop().toLowerCase();
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) type = `image/${ext}`;
+          else if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) type = `video/${ext}`;
+          else if (['mp3', 'wav', 'ogg'].includes(ext)) type = `audio/${ext}`;
+          else if (ext === 'pdf') type = 'application/pdf';
+
+          return {
+            name,
+            type,
+            size: "Attached file",
+            preview: url,
+            loading: false
+          };
+        });
+      });
+    } else {
+      setLocalFiles([]);
+    }
+  }, [report?.mediaFiles]);
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    for (const file of files) {
+      const localPreviewUrl = URL.createObjectURL(file);
+      
+      setLocalFiles((prev) => [
+        ...prev,
+        {
+          name: file.name,
+          type: file.type,
+          size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+          preview: localPreviewUrl,
+          loading: true
+        }
+      ]);
+
+      try {
+        const res = await fetch(`${API_BASE}/reports/upload`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": file.type,
+            "X-File-Name": encodeURIComponent(file.name)
+          },
+          body: file
+        });
+
+        if (!res.ok) {
+          throw new Error(`Upload failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+        const blobUrl = data.url;
+
+        setLocalFiles((prev) => {
+          const updated = [...prev];
+          const matchIdx = updated.findIndex(f => f.preview === localPreviewUrl);
+          if (matchIdx !== -1) {
+            updated[matchIdx] = {
+              ...updated[matchIdx],
+              preview: blobUrl,
+              loading: false
+            };
+          }
+          return updated;
+        });
+
+        const updatedMedia = [...(report.mediaFiles || []), blobUrl];
+        fieldChanged({ target: { name: 'mediaFiles', value: updatedMedia } });
+      } catch (err) {
+        console.error("File upload failed:", err);
+        setLocalFiles((prev) => prev.filter(f => f.preview !== localPreviewUrl));
+        setOutcome({
+          show: true,
+          message: `Failed to upload file ${file.name}: ${err.message}`,
+          type: "error"
+        });
+      }
+    }
+  };
+
+  const removeFile = (index) => {
+    const updatedMedia = (report.mediaFiles || []).filter((_, i) => i !== index);
+    fieldChanged({ target: { name: 'mediaFiles', value: updatedMedia } });
+  };
 
   const fieldChanged = ({target}) => {
     const { name, value } = target;
@@ -258,22 +385,157 @@ function Report({ report, readOnly, onChange, hideReportDate = false }) {
             </Stack>
           </Stack>     
         </Grid>   
-        {report?.mediaFiles && report.mediaFiles.length > 0 && (
-          <Grid item xs={fullWidth} >
-            <Accordion disabled={!report?.mediaFiles?.length} >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                aria-controls="panel1a-content"
-                id="panel1a-header"      
-              >
-                <Badge badgeContent={report?.mediaFiles?.length} color="primary" showZero>
-                  <Box fontWeight='fontWeightBold'>Media Files</Box>
-                </Badge>
-              </AccordionSummary>
-              <AccordionDetails>
-                <MediaViewer links={report.mediaFiles} />              
-              </AccordionDetails>
-            </Accordion>
+        {readOnly ? (
+          report?.mediaFiles && report.mediaFiles.length > 0 && (
+            <Grid item xs={fullWidth}>
+              <Accordion disabled={!report?.mediaFiles?.length}>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  aria-controls="panel1a-content"
+                  id="panel1a-header"
+                >
+                  <Badge badgeContent={report?.mediaFiles?.length} color="primary" showZero>
+                    <Box fontWeight='fontWeightBold'>Media Files</Box>
+                  </Badge>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <MediaViewer links={report.mediaFiles} />
+                </AccordionDetails>
+              </Accordion>
+            </Grid>
+          )
+        ) : (
+          <Grid item xs={fullWidth}>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#0f172a", letterSpacing: "-0.01em" }}>
+                Rich Media & Document Attachments
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Attach evidence files like eyewitness photos, drone footage, audio records, or official PDF briefings.
+              </Typography>
+            </Box>
+
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                mt: 1,
+                borderRadius: 4,
+                border: '2px dashed #06b6d4',
+                bgcolor: 'rgba(6, 182, 212, 0.01)',
+                textAlign: 'center',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: 'rgba(6, 182, 212, 0.04)',
+                  borderColor: '#22d3ee',
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <input
+                accept="image/*,video/*,audio/*,application/pdf,.doc,.docx"
+                style={{ display: 'none' }}
+                id="media-upload-input"
+                multiple
+                type="file"
+                onChange={handleFileChange}
+              />
+              <label htmlFor="media-upload-input" style={{ cursor: 'pointer', width: '100%', display: 'block' }}>
+                <Box sx={{ p: 1 }}>
+                  <CloudUploadIcon sx={{ fontSize: 44, color: '#06b6d4', mb: 1, filter: 'drop-shadow(0 4px 12px rgba(6, 182, 212, 0.35))' }} />
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '1.1rem' }}>
+                    Drag & Drop or Click to Attach Files
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Supports Images, Videos, Documents, and Audio
+                  </Typography>
+                </Box>
+              </label>
+            </Paper>
+
+            {localFiles.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', mb: 1.5 }}>
+                  Attached Files ({localFiles.length})
+                </Typography>
+                <Grid container spacing={2}>
+                  {localFiles.map((file, idx) => {
+                    const isImage = file.type.startsWith('image/');
+                    const isVideo = file.type.startsWith('video/');
+                    const isAudio = file.type.startsWith('audio/');
+
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={idx}>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 3,
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            bgcolor: '#f8fafc',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              borderColor: '#cbd5e1',
+                              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.05)'
+                            }
+                          }}
+                        >
+                          {isImage ? (
+                            <Box sx={{ width: 40, height: 40, borderRadius: 2, overflow: 'hidden', border: '1px solid #cbd5e1', flexShrink: 0 }}>
+                              <img src={file.preview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </Box>
+                          ) : (
+                            <Box sx={{ width: 40, height: 40, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(15, 23, 42, 0.05)', color: '#0f172a', flexShrink: 0 }}>
+                              {isVideo ? <MovieIcon /> : isAudio ? <AudioIcon /> : <DescriptionIcon />}
+                            </Box>
+                          )}
+
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                              {file.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {file.size}
+                            </Typography>
+                          </Box>
+
+                          {file.loading ? (
+                            <CircularProgress size={20} sx={{ color: '#06b6d4', mx: 1 }} />
+                          ) : (
+                            <IconButton
+                              onClick={() => removeFile(idx)}
+                              size="small"
+                              sx={{
+                                color: '#ef4444',
+                                bgcolor: 'rgba(239, 68, 68, 0.05)',
+                                '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' }
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Paper>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
+
+            <Snackbar
+              open={outcome.show}
+              autoHideDuration={6000}
+              onClose={() => setOutcome({ ...outcome, show: false })}
+            >
+              <Alert severity={outcome.type} sx={{ width: "100%" }}>
+                {outcome.message}
+              </Alert>
+            </Snackbar>
           </Grid>
         )}
         <Grid item xs={fullWidth}><Divider/></Grid>
