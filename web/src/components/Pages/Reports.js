@@ -43,7 +43,7 @@ function Reports() {
     if (!searchState.filters) return [];
     return searchState.filters.map((f) => ({
       field: f.field,
-      values: f.values.map((v) => v.value),
+      values: f.values.map((v) => (v && typeof v === "object" && "value" in v ? v.value : v)),
       type: "any",
     }));
   };
