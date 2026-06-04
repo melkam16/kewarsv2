@@ -19,6 +19,10 @@
       "dest": "ews-backend/server.js"
     },
     {
+      "src": "/(static/.*|.*\\.[a-zA-Z0-9]+)$",
+      "dest": "/web/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {
