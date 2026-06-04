@@ -549,7 +549,7 @@ router.post("/upload", authenticate(), express.raw({ type: '*/*', limit: '20mb' 
             return res.status(400).json({ error: "Empty file body" });
         }
 
-        const uniqueFilename = `report-docs/${Date.now()}-${filename}`;
+        const uniqueFilename = `private/${Date.now()}-${filename}`;
         
         console.log(`Uploading ${filename} to Vercel Blob as ${uniqueFilename}...`);
         
