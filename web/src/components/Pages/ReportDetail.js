@@ -215,10 +215,7 @@ function ReportDetail({ readOnly }) {
     setIsValid(errors.length === 0);
   };
 
-  const isReadOnly = () =>
-    readOnly ||
-    report?.status === ReportStatus.rejected ||
-    report?.status === ReportStatus.published;
+  const isReadOnly = () => readOnly;
 
   useEffect(() => {
     if (!report && token) {
