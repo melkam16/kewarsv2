@@ -496,9 +496,29 @@ function Report({ report, readOnly, onChange, hideReportDate = false }) {
                           )}
 
                           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
-                              {file.name}
-                            </Typography>
+                            {!file.loading ? (
+                              <a href={file.preview} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                <Typography 
+                                  variant="body2" 
+                                  sx={{ 
+                                    fontWeight: 600, 
+                                    color: '#06b6d4', 
+                                    textOverflow: 'ellipsis', 
+                                    overflow: 'hidden', 
+                                    whiteSpace: 'nowrap', 
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    '&:hover': { textDecoration: 'underline' }
+                                  }}
+                                >
+                                  {file.name}
+                                </Typography>
+                              </a>
+                            ) : (
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#0f172a', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                                {file.name}
+                              </Typography>
+                            )}
                             <Typography variant="caption" color="text.secondary">
                               {file.size}
                             </Typography>

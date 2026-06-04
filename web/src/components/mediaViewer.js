@@ -2,7 +2,7 @@ import React from 'react';
 import { Storage } from 'aws-amplify';
 import ReactPlayer from 'react-player';
 import {
-  Box, Paper, IconButton,
+  Box, Paper, IconButton, Button,
 } from '@mui/material';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
@@ -15,9 +15,11 @@ Storage.configure({
 
 const imageExtension = new RegExp(/.*?\.(?:(?:jpeg)|(?:png)|(?:gif)|(?:jpg))$/);
 const audioExtension = new RegExp(/.*?\.(?:(?:mp3)|(?:acc)|(?:wav))$/);
+const videoExtension = new RegExp(/.*?\.(?:(?:mp4)|(?:webm)|(?:ogg)|(?:mov))$/);
 
 const isImage = (link) => imageExtension.test(link) || (typeof link === 'string' && link.startsWith('data:image/'));
 const isAudio = (link) => audioExtension.test(link) || (typeof link === 'string' && link.startsWith('data:audio/'));
+const isVideo = (link) => videoExtension.test(link);
 
 function Item(props) {
   if (isImage(props.item)) {
@@ -35,11 +37,33 @@ function Item(props) {
         </audio>          
       </Paper>
     );
+  } else if (isVideo(props.item)) {
+    return (
+      <Paper sx={{ display: 'flex', justifyContent: 'center', p: 1, bgcolor: 'transparent', boxShadow: 'none' }}>          
+        <ReactPlayer key={props.key} url={props.url} style={{ margin: 'auto', maxWidth: '100%' }} controls={true} height="300px" width="100%" />       
+      </Paper>
+    );
   }
 
+  // Fallback for non-media files (PDF, Word, TXT, etc.)
+  let fileName = "Attached File";
+  try {
+    const decoded = decodeURIComponent(props.item);
+    const parts = decoded.split('/');
+    fileName = parts[parts.length - 1];
+  } catch (e) {}
+
   return (
-    <Paper sx={{ display: 'flex', justifyContent: 'center', p: 1, bgcolor: 'transparent', boxShadow: 'none' }}>          
-      <ReactPlayer key={props.key} url={props.url} style={{ margin: 'auto', maxWidth: '100%' }} controls={true} height="300px" width="100%" />       
+    <Paper sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', minWidth: '280px', textAlign: 'center', gap: 2, boxShadow: 'none' }}>
+      <Box sx={{ fontSize: '3rem' }}>📄</Box>
+      <Box sx={{ fontWeight: 600, color: '#0f172a', wordBreak: 'break-all' }}>
+        {fileName}
+      </Box>
+      <a href={props.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+        <Button variant="contained" color="primary" sx={{ bgcolor: '#06b6d4', '&:hover': { bgcolor: '#0891b2' }, textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}>
+          Open / Download File
+        </Button>
+      </a>
     </Paper>
   );
 }
