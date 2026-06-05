@@ -104,6 +104,10 @@ export default function Analytics() {
   const [category, setCategory] = useState("");
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
+  const [reportLanguage, setReportLanguage] = useState("am");
+
+  const getTitle = (r) => reportLanguage === "en" ? (r.titleEn || r.title) : r.title;
+  const getDescription = (r) => reportLanguage === "en" ? (r.descriptionEn || r.description) : r.description;
 
   // Data States
   const [reportData, setReportData] = useState(null);
@@ -331,15 +335,30 @@ export default function Analytics() {
             }
           }
           @media print {
-            body {
+            body, html, #root {
               background: #ffffff !important;
               color: #000000 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100% !important;
             }
-            .no-print {
+            .no-print, nav, header, .MuiDrawer-root, .MuiAppBar-root {
               display: none !important;
+            }
+            main, [component="main"] {
+              padding: 0 !important;
+              margin: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
             }
             .print-only-section {
               display: block !important;
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
             }
             .page-break {
               page-break-after: always;
@@ -392,7 +411,7 @@ export default function Analytics() {
               disabled={!reportData}
               sx={{ borderRadius: "8px" }}
             >
-              Print PDF
+              Download PDF
             </Button>
             <Button
               variant="outlined"
@@ -420,9 +439,9 @@ export default function Analytics() {
           elevation={0}
           sx={{ p: 3, mb: 4, border: "1px solid #e5e7eb" }}
         >
-          <Grid container spacing={2.5} alignItems="center">
+          <Grid container spacing={2} alignItems="center">
             {/* Start Date */}
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={1.5}>
               <TextField
                 fullWidth
                 size="small"
@@ -435,7 +454,7 @@ export default function Analytics() {
             </Grid>
 
             {/* End Date */}
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={1.5}>
               <TextField
                 fullWidth
                 size="small"
@@ -448,7 +467,7 @@ export default function Analytics() {
             </Grid>
 
             {/* Region */}
-            <Grid item xs={12} sm={4} md={2}>
+            <Grid item xs={12} sm={4} md={1.7}>
               <FormControl fullWidth size="small">
                 <InputLabel id="region-label">Region</InputLabel>
                 <Select
@@ -470,7 +489,7 @@ export default function Analytics() {
             </Grid>
 
             {/* Category */}
-            <Grid item xs={12} sm={4} md={2}>
+            <Grid item xs={12} sm={4} md={1.7}>
               <FormControl fullWidth size="small">
                 <InputLabel id="category-label">Incident Type</InputLabel>
                 <Select
@@ -492,7 +511,7 @@ export default function Analytics() {
             </Grid>
 
             {/* Severity */}
-            <Grid item xs={12} sm={4} md={1.5}>
+            <Grid item xs={12} sm={4} md={1.1}>
               <FormControl fullWidth size="small">
                 <InputLabel id="severity-label">Severity</InputLabel>
                 <Select
@@ -512,7 +531,7 @@ export default function Analytics() {
             </Grid>
 
             {/* Status */}
-            <Grid item xs={12} sm={4} md={1.5}>
+            <Grid item xs={12} sm={4} md={1.2}>
               <FormControl fullWidth size="small">
                 <InputLabel id="status-label">Status</InputLabel>
                 <Select
@@ -528,6 +547,22 @@ export default function Analytics() {
                   <MenuItem value="unprocessed">Unprocessed</MenuItem>
                   <MenuItem value="published">Published</MenuItem>
                   <MenuItem value="rejected">Rejected</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Language Selection */}
+            <Grid item xs={12} sm={4} md={1.8}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="report-lang-label">Report Language</InputLabel>
+                <Select
+                  labelId="report-lang-label"
+                  value={reportLanguage}
+                  label="Report Language"
+                  onChange={(e) => setReportLanguage(e.target.value)}
+                >
+                  <MenuItem value="am">Amharic (Default)</MenuItem>
+                  <MenuItem value="en">English Only</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -752,7 +787,7 @@ export default function Analytics() {
                         .map((r, idx) => (
                           <TableRow key={r.id || idx} hover>
                             <TableCell sx={{ fontWeight: 600, color: "#1f2937" }}>
-                              {r.title || `Report ${r.id}`}
+                              {getTitle(r) || `Report ${r.id}`}
                             </TableCell>
                             <TableCell>
                               {config.locations[r.incidentLocation?.region]?.label.en || r.incidentLocation?.region || "N/A"}
@@ -915,7 +950,7 @@ export default function Analytics() {
                     FILTER SCOPE
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {region ? `Region: ${region}` : "All Regions"} • {category ? `Type: ${category}` : "All Types"}
+                    {region ? `Region: ${config.locations[region]?.label.en || region}` : "All Regions"} • {category ? `Type: ${config.categories[category]?.label.en || category}` : "All Types"}
                   </Typography>
                 </Grid>
               </Grid>
@@ -979,7 +1014,7 @@ export default function Analytics() {
             <Box className="page-break avoid-break" key={r.id || idx} sx={{ p: 4, mb: 4, width: "100%", boxSizing: "border-box" }}>
               {/* Incident Title */}
               <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, color: "#111827" }}>
-                ⚠️ {r.title || `Report ${r.id}`}
+                ⚠️ {getTitle(r) || `Report ${r.id}`}
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
@@ -1013,7 +1048,7 @@ export default function Analytics() {
                         ℹ️
                       </Box>
                       <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b" }}>
-                        የክስተት ገለጻ
+                        {reportLanguage === "en" ? "Incident Description" : "የክስተት ገለጻ"}
                       </Typography>
                     </Box>
 
@@ -1027,7 +1062,7 @@ export default function Analytics() {
                         fontSize: "0.95rem",
                       }}
                     >
-                      {r.description || "ምንም ገለጻ አልተሰጠም።"}
+                      {getDescription(r) || (reportLanguage === "en" ? "No description provided." : "ምንም ገለጻ አልተሰጠም።")}
                     </Typography>
 
 
@@ -1086,7 +1121,7 @@ export default function Analytics() {
                         </Box>
                       ) : (
                         <Typography variant="body2" sx={{ color: "#64748b", fontStyle: "italic", fontSize: "0.9rem" }}>
-                          ለዚህ ማንቂያ ምንም ሚዲያ አልተጫነም።
+                          {reportLanguage === "en" ? "No media uploaded for this warning." : "ለዚህ ማንቂያ ምንም ሚዲያ አልተጫነም።"}
                         </Typography>
                       )}
                     </Paper>
