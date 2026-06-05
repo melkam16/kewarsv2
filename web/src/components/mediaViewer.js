@@ -1,5 +1,4 @@
 import React from 'react';
-import { Storage } from 'aws-amplify';
 import ReactPlayer from 'react-player';
 import {
   Box, Paper, IconButton, Button, Dialog, DialogContent, DialogTitle, Typography, Stack,
@@ -11,15 +10,9 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import DownloadIcon from '@mui/icons-material/Download';
 
-Storage.configure({
-  customPrefix: {
-    public: '', private: '', protected: '',
-  }
-});
-
-const imageExtension = new RegExp(/.*?\.(?:(?:jpeg)|(?:png)|(?:gif)|(?:jpg))$/);
-const audioExtension = new RegExp(/.*?\.(?:(?:mp3)|(?:acc)|(?:wav))$/);
-const videoExtension = new RegExp(/.*?\.(?:(?:mp4)|(?:webm)|(?:ogg)|(?:mov))$/);
+const imageExtension = new RegExp(/.*?\.(?:(?:jpeg)|(?:png)|(?:gif)|(?:jpg))$/i);
+const audioExtension = new RegExp(/.*?\.(?:(?:mp3)|(?:acc)|(?:wav))$/i);
+const videoExtension = new RegExp(/.*?\.(?:(?:mp4)|(?:webm)|(?:ogg)|(?:mov))$/i);
 
 const isImage = (link) => imageExtension.test(link) || (typeof link === 'string' && link.startsWith('data:image/'));
 const isAudio = (link) => audioExtension.test(link) || (typeof link === 'string' && link.startsWith('data:audio/'));
@@ -153,48 +146,43 @@ function Item(props) {
 }
 
 function MediaViewer ({links}) {
-  const [signedUrls, setSignedUrls] = React.useState([]);
+  const [resolvedUrls, setResolvedUrls] = React.useState([]);
   const [activeStep, setActiveStep] = React.useState(0);
   const [open, setOpen] = React.useState(false);
 
-  const getSignedUrls = async () => {        
-    try {
-      const urlPromises = links?.map((link) => {
-        if (typeof link === 'string' && (link.startsWith('data:') || link.startsWith('blob:') || link.startsWith('http'))) {
-          return link;
-        }
-        const media = link.replace(/^\//, '');
-        return Storage.get(`${media}`).catch(() => link);
-      });
-
-      const a = await Promise.all(urlPromises);
-      setSignedUrls(a);
-    } catch(err) {
-      console.log(err);      
-    }
-  }
-
   React.useEffect(() => {
-    getSignedUrls();
+    if (!links || links.length === 0) {
+      setResolvedUrls([]);
+      return;
+    }
+    // All URLs should already be full HTTP URLs from the backend
+    // Just use them directly — no AWS Amplify Storage.get() needed
+    const urls = links.map((link) => {
+      if (typeof link === 'string') {
+        return link;
+      }
+      return String(link);
+    });
+    setResolvedUrls(urls);
     setActiveStep(0);
   }, [links]);
 
-  if (!signedUrls || signedUrls.length === 0) {
+  if (!resolvedUrls || resolvedUrls.length === 0) {
     return null;
   }
 
   const handleNext = () => {
-    setActiveStep((prevActiveStep) => (prevActiveStep + 1) % signedUrls.length);
+    setActiveStep((prevActiveStep) => (prevActiveStep + 1) % resolvedUrls.length);
   };
 
   const handleBack = () => {
-    setActiveStep((prevActiveStep) => (prevActiveStep - 1 + signedUrls.length) % signedUrls.length);
+    setActiveStep((prevActiveStep) => (prevActiveStep - 1 + resolvedUrls.length) % resolvedUrls.length);
   };
 
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1 }}>
       <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-        {signedUrls.length > 1 && (
+        {resolvedUrls.length > 1 && (
           <IconButton 
             onClick={handleBack} 
             sx={{ 
@@ -213,13 +201,13 @@ function MediaViewer ({links}) {
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', width: '100%' }}>
           <Item 
             item={links[activeStep]} 
-            url={signedUrls[activeStep]} 
+            url={resolvedUrls[activeStep]} 
             key={activeStep} 
             onExpand={() => setOpen(true)}
           />
         </Box>
 
-        {signedUrls.length > 1 && (
+        {resolvedUrls.length > 1 && (
           <IconButton 
             onClick={handleNext} 
             sx={{ 
@@ -236,9 +224,9 @@ function MediaViewer ({links}) {
         )}
       </Box>
 
-      {signedUrls.length > 1 && (
+      {resolvedUrls.length > 1 && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1, mb: 1 }}>
-          {signedUrls.map((_, index) => (
+          {resolvedUrls.map((_, index) => (
             <Box
               key={index}
               onClick={() => setActiveStep(index)}
@@ -296,22 +284,22 @@ function MediaViewer ({links}) {
           {links[activeStep] && (
             isImage(links[activeStep]) ? (
               <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '75vh' }}>
-                <img src={signedUrls[activeStep]} alt="Expanded Content" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px' }} />
+                <img src={resolvedUrls[activeStep]} alt="Expanded Content" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px' }} />
               </Box>
             ) : isAudio(links[activeStep]) ? (
               <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', bgcolor: '#f8fafc' }}>
-                <audio controls src={signedUrls[activeStep]} autoPlay style={{ width: '100%', maxWidth: '500px' }} />
+                <audio controls src={resolvedUrls[activeStep]} autoPlay style={{ width: '100%', maxWidth: '500px' }} />
               </Box>
             ) : isVideo(links[activeStep]) ? (
               <Box sx={{ p: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '70vh' }}>
-                <ReactPlayer url={signedUrls[activeStep]} controls={true} playing={true} width="100%" height="100%" style={{ maxWidth: '100%' }} />
+                <ReactPlayer url={resolvedUrls[activeStep]} controls={true} playing={true} width="100%" height="100%" style={{ maxWidth: '100%' }} />
               </Box>
             ) : (
               // Document Viewer (PDF, TXT, Word)
               <Box sx={{ width: '100%', height: '80vh', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff' }}>
                 {links[activeStep].toLowerCase().endsWith('.pdf') || links[activeStep].toLowerCase().endsWith('.txt') ? (
                   <iframe 
-                    src={signedUrls[activeStep]} 
+                    src={resolvedUrls[activeStep]} 
                     title="Document Preview" 
                     width="100%" 
                     height="100%" 
@@ -320,7 +308,7 @@ function MediaViewer ({links}) {
                 ) : (
                   // Word Document (doc/docx) via Google Docs Viewer
                   <iframe 
-                    src={`https://docs.google.com/gview?url=${encodeURIComponent(signedUrls[activeStep])}&embedded=true`} 
+                    src={`https://docs.google.com/gview?url=${encodeURIComponent(resolvedUrls[activeStep])}&embedded=true`} 
                     title="Document Preview" 
                     width="100%" 
                     height="100%" 

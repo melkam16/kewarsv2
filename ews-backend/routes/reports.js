@@ -55,13 +55,9 @@ function addBlobBaseUrl(url) {
 
 function stripBlobBaseUrl(url) {
   if (!url) return url;
-  const prefix = process.env.BLOB_BASE_URL;
-  if (prefix && url.startsWith(prefix)) {
-    let relative = url.substring(prefix.length);
-    if (relative.startsWith('/')) {
-      relative = relative.substring(1);
-    }
-    return relative;
+  // If URL starts with http, it's already a full blob URL — store as-is
+  if (url.startsWith('http')) {
+    return url;
   }
   return url;
 }
@@ -584,7 +580,7 @@ router.post("/upload", authenticate(), express.raw({ type: '*/*', limit: '20mb' 
         console.log(`Uploading ${filename} to Vercel Blob as ${uniqueFilename}...`);
         
         const blob = await put(uniqueFilename, fileBuffer, {
-            access: 'private',
+            access: 'public',
             contentType: mimeType,
             token: process.env.BLOB_READ_WRITE_TOKEN
         });
