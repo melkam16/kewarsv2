@@ -1030,48 +1030,7 @@ export default function Analytics() {
                       {r.description || "ምንም ገለጻ አልተሰጠም።"}
                     </Typography>
 
-                    <Divider sx={{ my: 2.5 }} />
 
-                    {/* Metadata details table */}
-                    <Grid container spacing={1.5}>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                          REGION / ክልል
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {config.locations[r.incidentLocation?.region]?.label.en || r.incidentLocation?.region || "N/A"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                          ZONE / ዞን
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {r.incidentLocation?.zone || "N/A"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                          WOREDA / ወረዳ
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {r.incidentLocation?.woreda || "N/A"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                          SEVERITY / አስቸኳይነት
-                        </Typography>
-                        <Box sx={{ mt: 0.5 }}>
-                          <Chip
-                            label={r.severity || "low"}
-                            size="small"
-                            color={getSeverityColor(r.severity)}
-                            sx={{ fontWeight: 700, textTransform: "uppercase", height: 20 }}
-                          />
-                        </Box>
-                      </Grid>
-                    </Grid>
                   </Paper>
                 </Grid>
 
