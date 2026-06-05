@@ -46,7 +46,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar, Pie } from "react-chartjs-2";
-import { Wrapper } from "@googlemaps/react-wrapper";
+import html2pdf from "html2pdf.js";
 
 import config from "../../config";
 import { AuthContext } from "../contexts/AuthContext";
@@ -62,37 +62,7 @@ ChartJS.register(
   Legend
 );
 
-// Custom Mini Satellite Map for Print-Only Cards
-const IncidentDetailMap = ({ report }) => {
-  const ref = React.useRef(null);
-  const [map, setMap] = React.useState(null);
 
-  React.useEffect(() => {
-    if (ref.current && !map && report) {
-      const lat = parseFloat(report.incidentGps?.lat);
-      const lon = parseFloat(report.incidentGps?.lon);
-      if (isNaN(lat) || isNaN(lon)) return;
-
-      const center = { lat, lng: lon };
-      const newMap = new window.google.maps.Map(ref.current, {
-        center,
-        zoom: 10,
-        mapTypeId: "satellite",
-        disableDefaultUI: true, // Clean print without buttons
-      });
-
-      new window.google.maps.Marker({
-        position: center,
-        map: newMap,
-        title: report.title || "Incident Location",
-      });
-
-      setMap(newMap);
-    }
-  }, [ref, map, report]);
-
-  return <div ref={ref} style={{ width: "100%", height: "200px", borderRadius: "8px" }} />;
-};
 
 export default function Analytics() {
   const { token, user } = useContext(AuthContext);
@@ -161,11 +131,7 @@ export default function Analytics() {
     }
   };
 
-  useEffect(() => {
-    if (token) {
-      handleGenerateReport();
-    }
-  }, [token]);
+
 
   const prepareCharts = (summary) => {
     if (!summary) return;
@@ -306,7 +272,30 @@ export default function Analytics() {
   };
 
   const handlePrint = () => {
-    window.print();
+    const element = document.querySelector(".print-only-section");
+    if (!element) return;
+
+    // Clone element to modify display for html2pdf rendering without showing on screen
+    const cloned = element.cloneNode(true);
+    cloned.style.display = "block";
+    cloned.style.position = "absolute";
+    cloned.style.left = "-9999px";
+    cloned.style.top = "-9999px";
+    cloned.style.width = "800px";
+    document.body.appendChild(cloned);
+
+    const opt = {
+      margin:       15,
+      filename:     `InternalReport_${new Date().toISOString().slice(0, 10)}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().from(cloned).set(opt).save().then(() => {
+      document.body.removeChild(cloned);
+    });
   };
 
   const getSeverityColor = (sev) => {
@@ -592,6 +581,27 @@ export default function Analytics() {
           <Paper sx={{ p: 2, mb: 3, bgcolor: "#fef2f2", border: "1px solid #fca5a5" }}>
             <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
               ⚠️ {error}
+            </Typography>
+          </Paper>
+        )}
+
+        {/* Empty-state info card */}
+        {!reportData && !loading && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 6,
+              textAlign: "center",
+              border: "1px solid #e5e7eb",
+              bgcolor: "#ffffff",
+              borderRadius: "12px",
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#374151", mb: 1 }}>
+              No Report Generated
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Configure your desired parameters above and click "Run" to compile early warning reports and download formatted documents.
             </Typography>
           </Paper>
         )}
@@ -1018,133 +1028,139 @@ export default function Analytics() {
               </Typography>
               <Divider sx={{ mb: 3 }} />
 
-              <Grid container spacing={4}>
-                {/* Left Column: Incident Description */}
-                <Grid item xs={7.5}>
-                  <Paper
-                    elevation={0}
+              {/* Full-width Main Body (Incident Description & Media Attachments) */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3.5,
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "12px",
+                  bgcolor: "#ffffff",
+                  boxSizing: "border-box",
+                  width: "100%",
+                }}
+              >
+                {/* Information Badge Header */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                  <Box
                     sx={{
-                      p: 3,
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "12px",
-                      bgcolor: "#ffffff",
-                      height: "100%",
-                      boxSizing: "border-box"
+                      bgcolor: "rgba(37, 99, 235, 0.08)",
+                      color: "#2563eb",
+                      p: 0.5,
+                      borderRadius: 1.5,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    {/* Information Badge Header */}
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                      <Box
-                        sx={{
-                          bgcolor: "rgba(37, 99, 235, 0.08)",
-                          color: "#2563eb",
-                          p: 0.5,
-                          borderRadius: 1.5,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        ℹ️
-                      </Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b" }}>
-                        {reportLanguage === "en" ? "Incident Description" : "የክስተት ገለጻ"}
-                      </Typography>
-                    </Box>
+                    ℹ️
+                  </Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b" }}>
+                    {reportLanguage === "en" ? "Incident Description" : "የክስተት ገለጻ"}
+                  </Typography>
+                </Box>
 
-                    {/* Report Description */}
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: "#334155",
-                        whiteSpace: "pre-wrap",
-                        lineHeight: 1.7,
-                        fontSize: "0.95rem",
-                      }}
-                    >
-                      {getDescription(r) || (reportLanguage === "en" ? "No description provided." : "ምንም ገለጻ አልተሰጠም።")}
+                {/* Report Description */}
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "#334155",
+                    whiteSpace: "pre-wrap",
+                    lineHeight: 1.7,
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {getDescription(r) || (reportLanguage === "en" ? "No description provided." : "ምንም ገለጻ አልተሰጠም።")}
+                </Typography>
+
+                {/* Attached Media Section (Images, Videos, Docs with Links & Descriptions) */}
+                {r.mediaFiles && r.mediaFiles.length > 0 ? (
+                  <Box sx={{ mt: 4, pt: 3, borderTop: "1px solid #cbd5e1" }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b", mb: 2 }}>
+                      📎 {reportLanguage === "en" ? "Attached Media Files" : "የተያያዙ የሚዲያ ማስረጃዎች"} ({r.mediaFiles.length})
                     </Typography>
 
+                    <Stack spacing={3}>
+                      {r.mediaFiles.map((mediaUrl, mediaIdx) => {
+                        const filename = decodeURIComponent(mediaUrl).split("/").pop();
+                        const extension = mediaUrl.split("?")[0].split(".").pop().toLowerCase();
+                        const isImg = ["jpg", "jpeg", "png", "gif", "webp", "tiff", "bmp"].includes(extension);
+                        const proxiedUrl = `${API_BASE}/reports/media?url=${encodeURIComponent(mediaUrl)}`;
 
-                  </Paper>
-                </Grid>
-
-                {/* Right Column: Media Preview and Map */}
-                <Grid item xs={4.5}>
-                  <Stack spacing={3}>
-                    {/* Media Evidence card */}
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2.5,
-                        border: "1px solid #cbd5e1",
-                        borderRadius: "12px",
-                        bgcolor: "#ffffff",
-                        textAlign: "center",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        minHeight: "140px",
-                        boxSizing: "border-box"
-                      }}
-                    >
-                      {r.mediaFiles && r.mediaFiles.length > 0 ? (
-                        <Box sx={{ width: "100%" }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1.5, display: "block" }}>
-                            📎 ATTACHED EVIDENCE ({r.mediaFiles.length})
-                          </Typography>
-                          {r.mediaFiles.slice(0, 1).map((mediaUrl, idx) => {
-                            const isImg = ["jpg", "jpeg", "png", "gif", "webp"].includes(
-                              mediaUrl.split("?")[0].split(".").pop().toLowerCase()
-                            );
-                            const proxiedUrl = `${API_BASE}/reports/media?url=${encodeURIComponent(mediaUrl)}`;
-                            return isImg ? (
-                              <img
-                                key={idx}
-                                src={proxiedUrl}
-                                alt="Evidence Preview"
-                                style={{
-                                  maxHeight: "120px",
-                                  maxWidth: "100%",
-                                  objectFit: "contain",
-                                  borderRadius: "6px",
-                                  border: "1px solid #e2e8f0",
-                                }}
-                              />
+                        return (
+                          <Box
+                            key={mediaIdx}
+                            sx={{
+                              p: 2.5,
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "10px",
+                              bgcolor: "#f8fafc",
+                              boxSizing: "border-box"
+                            }}
+                          >
+                            {isImg ? (
+                              <Box>
+                                <img
+                                  src={proxiedUrl}
+                                  alt={filename}
+                                  style={{
+                                    width: "100%",
+                                    maxHeight: "550px",
+                                    objectFit: "contain",
+                                    borderRadius: "8px",
+                                    border: "1px solid #e2e8f0",
+                                    marginBottom: "12px",
+                                    backgroundColor: "#ffffff"
+                                  }}
+                                />
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: "#334155", mb: 1 }}>
+                                  {reportLanguage === "en" ? `Image ${mediaIdx + 1} Description: Warning Evidence Photo (${filename})` : `ምስል ${mediaIdx + 1} ገለጻ: የማስጠንቀቂያ ማስረጃ ፎቶ (${filename})`}
+                                </Typography>
+                              </Box>
                             ) : (
-                              <Typography key={idx} variant="body2" sx={{ fontWeight: 600, wordBreak: "break-all" }}>
-                                📄 {decodeURIComponent(mediaUrl).split("/").pop()}
-                              </Typography>
-                            );
-                          })}
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" sx={{ color: "#64748b", fontStyle: "italic", fontSize: "0.9rem" }}>
-                          {reportLanguage === "en" ? "No media uploaded for this warning." : "ለዚህ ማንቂያ ምንም ሚዲያ አልተጫነም።"}
-                        </Typography>
-                      )}
-                    </Paper>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 700, color: "#334155" }}>
+                                  {reportLanguage === "en" ? `File Attachment ${mediaIdx + 1} (${extension.toUpperCase()}):` : `የፋይል አባሪ ${mediaIdx + 1} (${extension.toUpperCase()}):`}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: "#475569", wordBreak: "break-all" }}>
+                                  {filename}
+                                </Typography>
+                              </Box>
+                            )}
 
-                    {/* Satellite Map card */}
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 0.5,
-                        border: "1px solid #cbd5e1",
-                        borderRadius: "12px",
-                        bgcolor: "#ffffff",
-                        overflow: "hidden",
-                        boxSizing: "border-box"
-                      }}
-                    >
-                      <Wrapper apiKey={"AIzaSyAXk_dX6DI6jxcUdjpvKqGBiKIKjoQoMOs"}>
-                        <IncidentDetailMap report={r} />
-                      </Wrapper>
-                    </Paper>
-                  </Stack>
-                </Grid>
-              </Grid>
+                            {/* Clickable Media Source Link */}
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: "#64748b" }}>
+                                {reportLanguage === "en" ? "Media Link:" : "የሚዲያ ሊንክ:"}
+                              </Typography>
+                              <a
+                                href={mediaUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  color: "#2563eb",
+                                  textDecoration: "underline",
+                                  fontSize: "0.825rem",
+                                  wordBreak: "break-all",
+                                  fontWeight: 600
+                                }}
+                              >
+                                {mediaUrl}
+                              </a>
+                            </Box>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  </Box>
+                ) : (
+                  <Box sx={{ mt: 3, pt: 3, borderTop: "1px solid #cbd5e1" }}>
+                    <Typography variant="body2" sx={{ color: "#64748b", fontStyle: "italic", fontSize: "0.9rem" }}>
+                      {reportLanguage === "en" ? "No media uploaded for this warning." : "ለዚህ ማንቂያ ምንም ሚዲያ አልተጫነም።"}
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
             </Box>
           ))}
         </div>
