@@ -97,6 +97,9 @@ function Reports() {
       });
 
       const result = await response.json();
+      if (!result || !result.results) {
+        throw new Error(result?.error || result?.message || "Failed to search reports");
+      }
 
       const mappedResults = result.results.map((r) => {
         const data = r.data || {};
@@ -136,6 +139,12 @@ function Reports() {
       };
     } catch (err) {
       console.error("Search error:", err);
+      return {
+        results: [],
+        totalResults: 0,
+        totalPages: 0,
+        facets: {},
+      };
     }
   };
 
