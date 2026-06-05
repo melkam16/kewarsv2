@@ -55,7 +55,10 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/web/index.html"
+      "dest": "/web/index.html",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
     }
   ]
 }
