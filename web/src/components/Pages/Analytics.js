@@ -131,7 +131,11 @@ export default function Analytics() {
     }
   };
 
-
+  useEffect(() => {
+    if (token) {
+      handleGenerateReport();
+    }
+  }, [token]);
 
   const prepareCharts = (summary) => {
     if (!summary) return;
@@ -277,11 +281,13 @@ export default function Analytics() {
 
     // Clone element to modify display for html2pdf rendering without showing on screen
     const cloned = element.cloneNode(true);
+    cloned.classList.remove("print-only-section"); // Strip the hidden class so html2canvas renders the layout
     cloned.style.display = "block";
     cloned.style.position = "absolute";
     cloned.style.left = "-9999px";
     cloned.style.top = "-9999px";
     cloned.style.width = "800px";
+    cloned.style.backgroundColor = "#ffffff";
     document.body.appendChild(cloned);
 
     const opt = {
