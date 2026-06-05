@@ -23,6 +23,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import HelpIcon from "@mui/icons-material/Help";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 
 import { AuthContext } from "../contexts/AuthContext";
 
@@ -31,6 +32,7 @@ const drawerWidth = 260;
 const pages = [
     { name: "Dashboard", path: "/", icon: <DashboardIcon /> },
     { name: "Reports", path: "/reports", icon: <DescriptionIcon /> },
+    { name: "Report Generator", path: "/analytics", icon: <AssessmentIcon /> },
     { name: "Users", path: "/users", role: "admin", icon: <PeopleIcon /> },
     { name: "Help", path: "/help", icon: <HelpIcon /> },
 ];

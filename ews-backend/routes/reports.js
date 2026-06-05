@@ -418,6 +418,119 @@ router.get("/media", async (req, res) => {
     }
 });
 
+// POST /api/reports/analytics - Internal report generation
+router.post("/analytics", authenticate(), async (req, res) => {
+    try {
+        const { startDate, endDate, region, category, severity, status } = req.body;
+
+        const where = {};
+
+        if (region) {
+            where.region = region;
+        }
+        if (severity) {
+            where.severity = severity;
+        }
+        if (status) {
+            where.status = status;
+        }
+        if (startDate || endDate) {
+            where.incident_date_time = {};
+            if (startDate) {
+                where.incident_date_time.gte = new Date(startDate);
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.incident_date_time.lte = end;
+            }
+        }
+        if (category) {
+            where.categories = { hasSome: [category] };
+        }
+
+        const allRevisions = await prisma.reports.findMany({
+            where,
+            orderBy: {
+                update_timestamp: 'desc'
+            }
+        });
+
+        // Group by report_id to get only the latest revision of each report
+        const groupedMap = new Map();
+        for (const r of allRevisions) {
+            const existing = groupedMap.get(r.report_id);
+            if (!existing) {
+                groupedMap.set(r.report_id, r);
+            } else {
+                // Draft takes priority
+                if (r.revision === 'draft') {
+                    groupedMap.set(r.report_id, r);
+                } else if (existing.revision !== 'draft') {
+                    const existingTime = new Date(existing.update_timestamp || 0).getTime();
+                    const rTime = new Date(r.update_timestamp || 0).getTime();
+                    if (rTime > existingTime) {
+                        groupedMap.set(r.report_id, r);
+                    }
+                }
+            }
+        }
+
+        const latestReports = Array.from(groupedMap.values());
+
+        // Sort by incident_date_time desc overall
+        latestReports.sort((a, b) => {
+            const tA = new Date(a.incident_date_time || 0).getTime();
+            const tB = new Date(b.incident_date_time || 0).getTime();
+            return tB - tA;
+        });
+
+        // Compute summaries
+        const totalCount = latestReports.length;
+        const severitySummary = { low: 0, medium: 0, high: 0 };
+        const statusSummary = { draft: 0, unprocessed: 0, published: 0, rejected: 0 };
+        const regionSummary = {};
+        const categorySummary = {};
+
+        latestReports.forEach(r => {
+            // Severity
+            const sev = r.severity?.toLowerCase() || 'low';
+            if (severitySummary[sev] !== undefined) {
+                severitySummary[sev]++;
+            }
+
+            // Status
+            const st = r.status?.toLowerCase() || 'draft';
+            if (statusSummary[st] !== undefined) {
+                statusSummary[st]++;
+            }
+
+            // Region
+            const reg = r.region || 'Unknown';
+            regionSummary[reg] = (regionSummary[reg] || 0) + 1;
+
+            // Categories
+            (r.categories || []).forEach(cat => {
+                categorySummary[cat] = (categorySummary[cat] || 0) + 1;
+            });
+        });
+
+        res.json({
+            summary: {
+                totalCount,
+                severitySummary,
+                statusSummary,
+                regionSummary,
+                categorySummary
+            },
+            reports: latestReports.map(dbReportToFrontendReport)
+        });
+    } catch (err) {
+        console.error("Internal Analytics Error:", err);
+        res.status(500).json({ error: "Failed to generate analytics report" });
+    }
+});
+
 // GET /api/reports/:id (Fetch Report Detail)
 router.get("/:id", authenticate(), async (req, res) => {
     const { id } = req.params;
