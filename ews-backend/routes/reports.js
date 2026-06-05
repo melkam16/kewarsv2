@@ -360,6 +360,10 @@ router.get("/media", async (req, res) => {
         return res.status(400).json({ error: "Missing url parameter" });
     }
 
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        return res.status(400).json({ error: "Invalid URL: must start with http:// or https://" });
+    }
+
     try {
         const cleanStoreId = process.env.BLOB_STORE_ID 
             ? process.env.BLOB_STORE_ID.replace('store_', '').toLowerCase() 
@@ -377,23 +381,26 @@ router.get("/media", async (req, res) => {
             return res.status(403).json({ error: "Access denied to this media host" });
         }
 
+        const access = parsedUrl.hostname.includes('.private.blob.vercel-storage.com') ? 'private' : 'public';
+
         const blobResult = await get(url, {
+            access,
             token: process.env.BLOB_READ_WRITE_TOKEN
         });
 
-        if (!blobResult || !blobResult.body) {
+        if (!blobResult || !blobResult.stream) {
             return res.status(404).json({ error: "Media not found" });
         }
 
-        res.setHeader("Content-Type", blobResult.contentType || "application/octet-stream");
+        const contentType = blobResult.blob?.contentType || "application/octet-stream";
+        res.setHeader("Content-Type", contentType);
         
-        const isPreviewable = blobResult.contentType && (
-            blobResult.contentType.startsWith("image/") ||
-            blobResult.contentType.startsWith("video/") ||
-            blobResult.contentType.startsWith("audio/") ||
-            blobResult.contentType === "application/pdf" ||
-            blobResult.contentType === "text/plain"
-        );
+        const isPreviewable = contentType.startsWith("image/") ||
+            contentType.startsWith("video/") ||
+            contentType.startsWith("audio/") ||
+            contentType === "application/pdf" ||
+            contentType === "text/plain";
+
         if (isPreviewable) {
             res.setHeader("Content-Disposition", "inline");
         } else {
@@ -401,7 +408,7 @@ router.get("/media", async (req, res) => {
             res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"`);
         }
 
-        const webStream = blobResult.body;
+        const webStream = blobResult.stream;
         const { Readable } = await import('stream');
         const nodeStream = Readable.fromWeb(webStream);
         nodeStream.pipe(res);
