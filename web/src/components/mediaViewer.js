@@ -10,13 +10,47 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import DownloadIcon from '@mui/icons-material/Download';
 
-const imageExtension = new RegExp(/.*?\.(?:(?:jpeg)|(?:png)|(?:gif)|(?:jpg))$/i);
-const audioExtension = new RegExp(/.*?\.(?:(?:mp3)|(?:acc)|(?:wav))$/i);
-const videoExtension = new RegExp(/.*?\.(?:(?:mp4)|(?:webm)|(?:ogg)|(?:mov))$/i);
+import API_BASE from '../api/apiBase';
 
-const isImage = (link) => imageExtension.test(link) || (typeof link === 'string' && link.startsWith('data:image/'));
-const isAudio = (link) => audioExtension.test(link) || (typeof link === 'string' && link.startsWith('data:audio/'));
-const isVideo = (link) => videoExtension.test(link);
+const getCleanFilename = (url) => {
+  if (typeof url !== 'string') return '';
+  try {
+    let targetUrl = url;
+    if (url.includes('/reports/media?url=')) {
+      const parts = url.split('/reports/media?url=');
+      targetUrl = decodeURIComponent(parts[parts.length - 1]);
+    }
+    const cleanUrl = targetUrl.split('?')[0].split('#')[0];
+    return cleanUrl.split('/').pop() || '';
+  } catch (e) {
+    return '';
+  }
+};
+
+const getCleanExtension = (url) => {
+  const filename = getCleanFilename(url);
+  return filename.split('.').pop().toLowerCase();
+};
+
+const isImage = (link) => {
+  if (typeof link !== 'string') return false;
+  if (link.startsWith('data:image/')) return true;
+  const ext = getCleanExtension(link);
+  return ['jpeg', 'png', 'gif', 'jpg', 'webp'].includes(ext);
+};
+
+const isAudio = (link) => {
+  if (typeof link !== 'string') return false;
+  if (link.startsWith('data:audio/')) return true;
+  const ext = getCleanExtension(link);
+  return ['mp3', 'wav', 'ogg', 'acc', 'm4a'].includes(ext);
+};
+
+const isVideo = (link) => {
+  if (typeof link !== 'string') return false;
+  const ext = getCleanExtension(link);
+  return ['mp4', 'webm', 'ogg', 'mov'].includes(ext);
+};
 
 function Item(props) {
   if (isImage(props.item)) {
@@ -94,10 +128,8 @@ function Item(props) {
   let fileName = "Attached File";
   let extension = "";
   try {
-    const decoded = decodeURIComponent(props.item);
-    const parts = decoded.split('/');
-    fileName = parts[parts.length - 1];
-    extension = fileName.split('.').pop().toLowerCase();
+    fileName = getCleanFilename(props.item);
+    extension = getCleanExtension(props.item);
   } catch (e) {}
 
   const isPdf = extension === 'pdf';
@@ -155,10 +187,12 @@ function MediaViewer ({links}) {
       setResolvedUrls([]);
       return;
     }
-    // All URLs should already be full HTTP URLs from the backend
-    // Just use them directly — no AWS Amplify Storage.get() needed
+    // Map Vercel Blob URLs to our media proxy endpoint to allow authenticated viewing/downloading and fix private 403s
     const urls = links.map((link) => {
       if (typeof link === 'string') {
+        if (link.startsWith('https://') && link.includes('.blob.vercel-storage.com')) {
+          return `${API_BASE}/reports/media?url=${encodeURIComponent(link)}`;
+        }
         return link;
       }
       return String(link);
@@ -297,7 +331,7 @@ function MediaViewer ({links}) {
             ) : (
               // Document Viewer (PDF, TXT, Word)
               <Box sx={{ width: '100%', height: '80vh', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff' }}>
-                {links[activeStep].toLowerCase().endsWith('.pdf') || links[activeStep].toLowerCase().endsWith('.txt') ? (
+                {getCleanExtension(links[activeStep]) === 'pdf' || getCleanExtension(links[activeStep]) === 'txt' ? (
                   <iframe 
                     src={resolvedUrls[activeStep]} 
                     title="Document Preview" 

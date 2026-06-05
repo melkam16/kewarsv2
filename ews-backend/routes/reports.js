@@ -2,7 +2,7 @@ import express from 'express';
 import { authenticate } from '../middleware/auth.js';
 import prisma from '../prisma.js';
 import crypto from 'crypto';
-import { put } from '@vercel/blob';
+import { put, get } from '@vercel/blob';
 
 const router = express.Router();
 
@@ -350,6 +350,64 @@ router.post("/", authenticate(), async (req, res) => {
     } catch (err) {
         console.error("Create Report Error:", err);
         res.status(500).json({ error: "Server error creating report" });
+    }
+});
+
+// GET /api/reports/media - Proxy media files from Vercel Blob to handle private blobs and inline headers
+router.get("/media", async (req, res) => {
+    const { url } = req.query;
+    if (!url) {
+        return res.status(400).json({ error: "Missing url parameter" });
+    }
+
+    try {
+        const cleanStoreId = process.env.BLOB_STORE_ID 
+            ? process.env.BLOB_STORE_ID.replace('store_', '').toLowerCase() 
+            : '';
+        const allowedPrivate = cleanStoreId ? `${cleanStoreId}.private.blob.vercel-storage.com` : '';
+        const allowedPublic = cleanStoreId ? `${cleanStoreId}.public.blob.vercel-storage.com` : '';
+
+        const parsedUrl = new URL(url);
+        const isVercelBlob = parsedUrl.hostname.endsWith('.blob.vercel-storage.com');
+        const isMatchedStore = cleanStoreId 
+            ? (parsedUrl.hostname === allowedPrivate || parsedUrl.hostname === allowedPublic)
+            : true;
+
+        if (!isVercelBlob || !isMatchedStore) {
+            return res.status(403).json({ error: "Access denied to this media host" });
+        }
+
+        const blobResult = await get(url, {
+            token: process.env.BLOB_READ_WRITE_TOKEN
+        });
+
+        if (!blobResult || !blobResult.body) {
+            return res.status(404).json({ error: "Media not found" });
+        }
+
+        res.setHeader("Content-Type", blobResult.contentType || "application/octet-stream");
+        
+        const isPreviewable = blobResult.contentType && (
+            blobResult.contentType.startsWith("image/") ||
+            blobResult.contentType.startsWith("video/") ||
+            blobResult.contentType.startsWith("audio/") ||
+            blobResult.contentType === "application/pdf" ||
+            blobResult.contentType === "text/plain"
+        );
+        if (isPreviewable) {
+            res.setHeader("Content-Disposition", "inline");
+        } else {
+            const fileName = url.split('/').pop().split('?')[0];
+            res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"`);
+        }
+
+        const webStream = blobResult.body;
+        const { Readable } = await import('stream');
+        const nodeStream = Readable.fromWeb(webStream);
+        nodeStream.pipe(res);
+    } catch (err) {
+        console.error("Media Proxy Error:", err);
+        res.status(500).json({ error: "Failed to load media file", details: err.message });
     }
 });
 

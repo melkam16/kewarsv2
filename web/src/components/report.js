@@ -65,19 +65,30 @@ function Report({ report, readOnly, onChange, hideReportDate = false }) {
   React.useEffect(() => {
     if (report?.mediaFiles) {
       setLocalFiles((prev) => {
-        const currentUrls = prev.map(f => f.preview);
+        const currentUrls = prev.map(f => {
+          if (f.preview && f.preview.includes('/reports/media?url=')) {
+            return decodeURIComponent(f.preview.split('/reports/media?url=')[1]);
+          }
+          return f.preview;
+        });
         const reportUrls = report.mediaFiles;
         
         const isIdentical = currentUrls.length === reportUrls.length && currentUrls.every((url, i) => url === reportUrls[i]);
         if (isIdentical) return prev;
 
         return reportUrls.map(url => {
-          const existing = prev.find(f => f.preview === url);
+          const existing = prev.find(f => {
+            const rawPreview = f.preview && f.preview.includes('/reports/media?url=')
+              ? decodeURIComponent(f.preview.split('/reports/media?url=')[1])
+              : f.preview;
+            return rawPreview === url;
+          });
           if (existing) return existing;
 
           let name = "file";
           try {
-            const parts = url.split('/');
+            const cleanUrl = url.split('?')[0].split('#')[0];
+            const parts = cleanUrl.split('/');
             const filenamePart = parts[parts.length - 1];
             name = decodeURIComponent(filenamePart);
           } catch (e) {}
@@ -89,11 +100,15 @@ function Report({ report, readOnly, onChange, hideReportDate = false }) {
           else if (['mp3', 'wav', 'ogg'].includes(ext)) type = `audio/${ext}`;
           else if (ext === 'pdf') type = 'application/pdf';
 
+          const previewUrl = (typeof url === 'string' && url.startsWith('https://') && url.includes('.blob.vercel-storage.com'))
+            ? `${API_BASE}/reports/media?url=${encodeURIComponent(url)}`
+            : url;
+
           return {
             name,
             type,
             size: "Attached file",
-            preview: url,
+            preview: previewUrl,
             loading: false
           };
         });
@@ -145,7 +160,9 @@ function Report({ report, readOnly, onChange, hideReportDate = false }) {
           if (matchIdx !== -1) {
             updated[matchIdx] = {
               ...updated[matchIdx],
-              preview: blobUrl,
+              preview: (blobUrl && blobUrl.startsWith('https://') && blobUrl.includes('.blob.vercel-storage.com'))
+                ? `${API_BASE}/reports/media?url=${encodeURIComponent(blobUrl)}`
+                : blobUrl,
               loading: false
             };
           }
