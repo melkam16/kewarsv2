@@ -27,7 +27,6 @@ import {
 } from "@mui/material";
 import {
   Assessment as AssessmentIcon,
-  Download as DownloadIcon,
   TableChart as CsvIcon,
   DataObject as JsonIcon,
   Print as PrintIcon,
@@ -47,6 +46,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar, Pie } from "react-chartjs-2";
+import { Wrapper } from "@googlemaps/react-wrapper";
 
 import config from "../../config";
 import { AuthContext } from "../contexts/AuthContext";
@@ -62,8 +62,40 @@ ChartJS.register(
   Legend
 );
 
+// Custom Mini Satellite Map for Print-Only Cards
+const IncidentDetailMap = ({ report }) => {
+  const ref = React.useRef(null);
+  const [map, setMap] = React.useState(null);
+
+  React.useEffect(() => {
+    if (ref.current && !map && report) {
+      const lat = parseFloat(report.incidentGps?.lat);
+      const lon = parseFloat(report.incidentGps?.lon);
+      if (isNaN(lat) || isNaN(lon)) return;
+
+      const center = { lat, lng: lon };
+      const newMap = new window.google.maps.Map(ref.current, {
+        center,
+        zoom: 10,
+        mapTypeId: "satellite",
+        disableDefaultUI: true, // Clean print without buttons
+      });
+
+      new window.google.maps.Marker({
+        position: center,
+        map: newMap,
+        title: report.title || "Incident Location",
+      });
+
+      setMap(newMap);
+    }
+  }, [ref, map, report]);
+
+  return <div ref={ref} style={{ width: "100%", height: "200px", borderRadius: "8px" }} />;
+};
+
 export default function Analytics() {
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
 
   // Filter States
   const [startDate, setStartDate] = useState("");
@@ -78,7 +110,7 @@ export default function Analytics() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Pagination State for Table
+  // Pagination State for Screen Table
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -178,6 +210,35 @@ export default function Analytics() {
     setPage(0);
   };
 
+  // DYNAMIC EXECUTIVE SUMMARY COMPILER
+  const generateExecutiveSummary = (summary) => {
+    if (!summary) return "";
+    const total = summary.totalCount || 0;
+    const high = summary.severitySummary?.high || 0;
+    const medium = summary.severitySummary?.medium || 0;
+    const low = summary.severitySummary?.low || 0;
+
+    let regionsText = "";
+    if (summary.regionSummary && Object.keys(summary.regionSummary).length > 0) {
+      const sortedRegions = Object.entries(summary.regionSummary)
+        .sort((a, b) => b[1] - a[1]);
+      const topRegion = sortedRegions[0][0];
+      const topCount = sortedRegions[0][1];
+      regionsText = `The most active region in this assessment is ${config.locations[topRegion]?.label.en || topRegion} with ${topCount} reported incidents.`;
+    }
+
+    let categoriesText = "";
+    if (summary.categorySummary && Object.keys(summary.categorySummary).length > 0) {
+      const sortedCats = Object.entries(summary.categorySummary)
+        .sort((a, b) => b[1] - a[1]);
+      const topCat = sortedCats[0][0];
+      const topCount = sortedCats[0][1];
+      categoriesText = `The primary incident threat category is ${config.categories[topCat]?.label.en || topCat} (${topCount} occurrences).`;
+    }
+
+    return `This assessment aggregates and audits warning alerts collected within the specified parameters. A total of ${total} unique warnings were processed. The severity profile indicates ${high} high-level critical threats, ${medium} medium-level alerts, and ${low} low-level minor incidents. ${regionsText} ${categoriesText} The audited records are detailed below to facilitate targeted warning resources, humanitarian coordination, and strategic warning deployment.`;
+  };
+
   // EXPORT UTILITIES
   const handleExportCSV = () => {
     if (!reportData || !reportData.reports.length) return;
@@ -264,28 +325,36 @@ export default function Analytics() {
       {/* Printable CSS Injection */}
       <style>
         {`
+          @media screen {
+            .print-only-section {
+              display: none !important;
+            }
+          }
           @media print {
-            body * {
-              visibility: hidden;
-            }
-            #printable-report-area, #printable-report-area * {
-              visibility: visible;
-            }
-            #printable-report-area {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
+            body {
+              background: #ffffff !important;
+              color: #000000 !important;
             }
             .no-print {
               display: none !important;
+            }
+            .print-only-section {
+              display: block !important;
+            }
+            .page-break {
+              page-break-after: always;
+              break-after: page;
+            }
+            .avoid-break {
+              break-inside: avoid;
+              page-break-inside: avoid;
             }
           }
         `}
       </style>
 
-      {/* Main Dashboard Section */}
-      <div id="printable-report-area">
+      {/* 1. SCREEN VIEW CONTAINER (NO-PRINT) */}
+      <div className="no-print">
         {/* Header Block */}
         <Box
           sx={{
@@ -294,7 +363,6 @@ export default function Analytics() {
             alignItems: "center",
             mb: 4,
           }}
-          className="no-print"
         >
           <Box>
             <Typography
@@ -347,22 +415,10 @@ export default function Analytics() {
           </Stack>
         </Box>
 
-        {/* Print Only Header (Invisible on Screen) */}
-        <Box sx={{ display: "none", "@media print": { display: "block" }, mb: 4 }}>
-          <Typography variant="h3" align="center" sx={{ fontWeight: 800, mb: 1 }}>
-            KEWARS Internal Warning Audit Report
-          </Typography>
-          <Typography variant="subtitle1" align="center" color="text.secondary" sx={{ mb: 2 }}>
-            Generated on: {new Date().toLocaleString()}
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
-        </Box>
-
-        {/* 1. FILTER CONTROLS GRID */}
+        {/* Filter Controls Panel */}
         <Paper
           elevation={0}
           sx={{ p: 3, mb: 4, border: "1px solid #e5e7eb" }}
-          className="no-print"
         >
           <Grid container spacing={2.5} alignItems="center">
             {/* Start Date */}
@@ -476,7 +532,7 @@ export default function Analytics() {
               </FormControl>
             </Grid>
 
-            {/* Action Buttons */}
+            {/* Action Run Button */}
             <Grid item xs={12} md={1} sx={{ textAlign: "right" }}>
               <Button
                 fullWidth
@@ -496,7 +552,7 @@ export default function Analytics() {
           </Grid>
         </Paper>
 
-        {/* Error Notification */}
+        {/* Error notification banner */}
         {error && (
           <Paper sx={{ p: 2, mb: 3, bgcolor: "#fef2f2", border: "1px solid #fca5a5" }}>
             <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
@@ -505,11 +561,10 @@ export default function Analytics() {
           </Paper>
         )}
 
-        {/* 2. SUMMARY METRICS CARD */}
+        {/* Summary Metrics Cards */}
         {reportData && (
           <>
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              {/* KPI Total Matching */}
               <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
@@ -523,39 +578,19 @@ export default function Analytics() {
                   }}
                 >
                   <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
+                    <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>
                       Matching Warnings
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
                       {reportData.summary.totalCount}
                     </Typography>
                   </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      bgcolor: "rgba(37, 99, 235, 0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#2563eb",
-                    }}
-                  >
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(37, 99, 235, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563eb" }}>
                     <AssessmentIcon />
                   </Box>
                 </Paper>
               </Grid>
 
-              {/* KPI Critical Risks */}
               <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
@@ -569,39 +604,19 @@ export default function Analytics() {
                   }}
                 >
                   <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
+                    <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>
                       Critical (High) Severity
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5, color: "#991b1b" }}>
                       {reportData.summary.severitySummary.high || 0}
                     </Typography>
                   </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      bgcolor: "rgba(153, 27, 27, 0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#991b1b",
-                    }}
-                  >
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(153, 27, 27, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "#991b1b" }}>
                     <WarningIcon />
                   </Box>
                 </Paper>
               </Grid>
 
-              {/* KPI Category Diversity */}
               <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
@@ -615,39 +630,19 @@ export default function Analytics() {
                   }}
                 >
                   <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
+                    <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>
                       Active Categories
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
                       {Object.keys(reportData.summary.categorySummary || {}).length}
                     </Typography>
                   </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      bgcolor: "rgba(5, 150, 105, 0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#059669",
-                    }}
-                  >
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(5, 150, 105, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "#059669" }}>
                     <CategoryIcon />
                   </Box>
                 </Paper>
               </Grid>
 
-              {/* KPI Active Regions */}
               <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
@@ -661,42 +656,22 @@ export default function Analytics() {
                   }}
                 >
                   <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "#6b7280",
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
+                    <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>
                       Incident Regions
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
                       {Object.keys(reportData.summary.regionSummary || {}).length}
                     </Typography>
                   </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      bgcolor: "rgba(234, 88, 12, 0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ea580c",
-                    }}
-                  >
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: "rgba(234, 88, 12, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ea580c" }}>
                     <LocationIcon />
                   </Box>
                 </Paper>
               </Grid>
             </Grid>
 
-            {/* 3. METRICS CHARTS ROW */}
+            {/* Metrics Charts row */}
             <Grid container spacing={3.5} sx={{ mb: 4 }}>
-              {/* Severity Breakdown Chart */}
               <Grid item xs={12} md={4}>
                 <Card sx={{ height: "100%" }}>
                   <CardContent>
@@ -711,11 +686,7 @@ export default function Analytics() {
                           options={{
                             responsive: true,
                             maintainAspectRatio: false,
-                            plugins: {
-                              legend: {
-                                position: "bottom",
-                              },
-                            },
+                            plugins: { legend: { position: "bottom" } },
                           }}
                         />
                       </Box>
@@ -724,7 +695,6 @@ export default function Analytics() {
                 </Card>
               </Grid>
 
-              {/* Category Breakdown Chart */}
               <Grid item xs={12} md={8}>
                 <Card sx={{ height: "100%" }}>
                   <CardContent>
@@ -739,18 +709,10 @@ export default function Analytics() {
                           options={{
                             responsive: true,
                             maintainAspectRatio: false,
-                            plugins: {
-                              legend: {
-                                display: false,
-                              },
-                            },
+                            plugins: { legend: { display: false } },
                             scales: {
-                              y: {
-                                grid: { color: "rgba(0, 0, 0, 0.04)" },
-                              },
-                              x: {
-                                grid: { display: false },
-                              },
+                              y: { grid: { color: "rgba(0, 0, 0, 0.04)" } },
+                              x: { grid: { display: false } },
                             },
                           }}
                         />
@@ -761,10 +723,10 @@ export default function Analytics() {
               </Grid>
             </Grid>
 
-            {/* 4. DETAILS TABLE GRID */}
+            {/* Screen details table */}
             <Card sx={{ border: "1px solid #e5e7eb" }}>
               <CardContent sx={{ p: 0 }}>
-                <Box sx={{ px: 3, py: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }} className="no-print">
+                <Box sx={{ px: 3, py: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
                     Report Listings Detail ({reportData.reports.length})
                   </Typography>
@@ -834,9 +796,7 @@ export default function Analytics() {
                               />
                             </TableCell>
                             <TableCell>
-                              {r.incidentDateTime
-                                ? new Date(r.incidentDateTime).toLocaleDateString()
-                                : "N/A"}
+                              {r.incidentDateTime ? new Date(r.incidentDateTime).toLocaleDateString() : "N/A"}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -844,7 +804,6 @@ export default function Analytics() {
                   </Table>
                 </TableContainer>
 
-                {/* Table Pagination */}
                 <TablePagination
                   rowsPerPageOptions={[5, 10, 25, 50]}
                   component="div"
@@ -853,13 +812,349 @@ export default function Analytics() {
                   page={page}
                   onPageChange={handleChangePage}
                   onRowsPerPageChange={handleChangeRowsPerPage}
-                  className="no-print"
                 />
               </CardContent>
             </Card>
           </>
         )}
       </div>
+
+      {/* 2. PRINT-ONLY SECTION (COVER PAGE, EXECUTIVE SUMMARY, MAP CARDS) */}
+      {reportData && (
+        <div className="print-only-section">
+          {/* A. Cover Page */}
+          <Box 
+            className="page-break" 
+            sx={{ 
+              height: "92vh", 
+              display: "flex", 
+              flexDirection: "column", 
+              justifyContent: "space-between",
+              p: 6,
+              border: "12px double #1f2937",
+              borderRadius: "8px",
+              boxSizing: "border-box"
+            }}
+          >
+            {/* Top Brand Info */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "10px",
+                  background: "#2563eb",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" fill="#ffffff" opacity="0.95" />
+                  <path d="M10 15.5L7.5 13L8.91 11.59L10 12.67L14.59 8.09L16 9.5L10 15.5Z" fill="#2563eb" />
+                </svg>
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: "-0.01em" }}>
+                  KEWARS
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                  Early Warning System Hub
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Central Document Title */}
+            <Box sx={{ textAlign: "center", my: "auto" }}>
+              <Typography variant="h3" sx={{ fontWeight: 900, color: "#1f2937", mb: 2, letterSpacing: "-0.04em" }}>
+                INTERNAL WARNING AUDIT & ASSESSMENT REPORT
+              </Typography>
+              <Typography variant="h5" color="text.secondary" sx={{ fontWeight: 500, mb: 4 }}>
+                Custom Generated Alerts Summary
+              </Typography>
+              <Box 
+                sx={{ 
+                  width: "120px", 
+                  height: "4px", 
+                  bgcolor: "#2563eb", 
+                  mx: "auto",
+                  borderRadius: "2px"
+                }} 
+              />
+            </Box>
+
+            {/* Print Metadata Block */}
+            <Box sx={{ bgcolor: "#f8fafc", p: 3, borderRadius: "10px", border: "1px solid #cbd5e1" }}>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    GENERATED ON
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {new Date().toLocaleString()}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    AUDITOR / GENERATOR
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {user?.name || "System Administrator"}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    TOTAL WARNINGS MATCHED
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#2563eb" }}>
+                    {reportData.summary.totalCount} Incidents
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    FILTER SCOPE
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {region ? `Region: ${region}` : "All Regions"} • {category ? `Type: ${category}` : "All Types"}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Box>
+          </Box>
+
+          {/* B. Executive Summary Page */}
+          <Box className="page-break" sx={{ p: 6 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: "#1f2937", mb: 3 }}>
+              Executive Summary
+            </Typography>
+            <Divider sx={{ mb: 4 }} />
+            
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 4, 
+                border: "1px solid #cbd5e1", 
+                borderRadius: "12px", 
+                bgcolor: "rgba(37, 99, 235, 0.02)",
+                lineHeight: 1.8 
+              }}
+            >
+              <Typography variant="body1" sx={{ color: "#334155", fontSize: "1.1rem", fontStyle: "italic", mb: 2 }}>
+                {generateExecutiveSummary(reportData.summary)}
+              </Typography>
+            </Paper>
+
+            {/* Quick Metrics Breakdown Table */}
+            <Typography variant="h6" sx={{ fontWeight: 700, mt: 6, mb: 2 }}>
+              Report Statistics Aggregates
+            </Typography>
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: "10px" }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "#f8fafc" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Metric Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Details Breakdown</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Severity Splits</TableCell>
+                    <TableCell>
+                      High: {reportData.summary.severitySummary.high || 0} • Medium: {reportData.summary.severitySummary.medium || 0} • Low: {reportData.summary.severitySummary.low || 0}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Status Splits</TableCell>
+                    <TableCell>
+                      Published: {reportData.summary.statusSummary.published || 0} • Unprocessed: {reportData.summary.statusSummary.unprocessed || 0} • Rejected: {reportData.summary.statusSummary.rejected || 0} • Drafts: {reportData.summary.statusSummary.draft || 0}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+
+          {/* C. Detail Incident Cards Loop */}
+          {reportData.reports.map((r, idx) => (
+            <Box className="page-break avoid-break" key={r.id || idx} sx={{ p: 4, mb: 4, width: "100%", boxSizing: "border-box" }}>
+              {/* Incident Title */}
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, color: "#111827" }}>
+                ⚠️ {r.title || `Report ${r.id}`}
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
+
+              <Grid container spacing={4}>
+                {/* Left Column: Incident Description */}
+                <Grid item xs={7.5}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "12px",
+                      bgcolor: "#ffffff",
+                      height: "100%",
+                      boxSizing: "border-box"
+                    }}
+                  >
+                    {/* Information Badge Header */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                      <Box
+                        sx={{
+                          bgcolor: "rgba(37, 99, 235, 0.08)",
+                          color: "#2563eb",
+                          p: 0.5,
+                          borderRadius: 1.5,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        ℹ️
+                      </Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b" }}>
+                        የክስተት ገለጻ
+                      </Typography>
+                    </Box>
+
+                    {/* Report Description */}
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: "#334155",
+                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.7,
+                        fontSize: "0.95rem",
+                      }}
+                    >
+                      {r.description || "ምንም ገለጻ አልተሰጠም።"}
+                    </Typography>
+
+                    <Divider sx={{ my: 2.5 }} />
+
+                    {/* Metadata details table */}
+                    <Grid container spacing={1.5}>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                          REGION / ክልል
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {config.locations[r.incidentLocation?.region]?.label.en || r.incidentLocation?.region || "N/A"}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                          ZONE / ዞን
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {r.incidentLocation?.zone || "N/A"}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                          WOREDA / ወረዳ
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {r.incidentLocation?.woreda || "N/A"}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                          SEVERITY / አስቸኳይነት
+                        </Typography>
+                        <Box sx={{ mt: 0.5 }}>
+                          <Chip
+                            label={r.severity || "low"}
+                            size="small"
+                            color={getSeverityColor(r.severity)}
+                            sx={{ fontWeight: 700, textTransform: "uppercase", height: 20 }}
+                          />
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                </Grid>
+
+                {/* Right Column: Media Preview and Map */}
+                <Grid item xs={4.5}>
+                  <Stack spacing={3}>
+                    {/* Media Evidence card */}
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "12px",
+                        bgcolor: "#ffffff",
+                        textAlign: "center",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minHeight: "140px",
+                        boxSizing: "border-box"
+                      }}
+                    >
+                      {r.mediaFiles && r.mediaFiles.length > 0 ? (
+                        <Box sx={{ width: "100%" }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1.5, display: "block" }}>
+                            📎 ATTACHED EVIDENCE ({r.mediaFiles.length})
+                          </Typography>
+                          {r.mediaFiles.slice(0, 1).map((mediaUrl, idx) => {
+                            const isImg = ["jpg", "jpeg", "png", "gif", "webp"].includes(
+                              mediaUrl.split("?")[0].split(".").pop().toLowerCase()
+                            );
+                            const proxiedUrl = `${API_BASE}/reports/media?url=${encodeURIComponent(mediaUrl)}`;
+                            return isImg ? (
+                              <img
+                                key={idx}
+                                src={proxiedUrl}
+                                alt="Evidence Preview"
+                                style={{
+                                  maxHeight: "120px",
+                                  maxWidth: "100%",
+                                  objectFit: "contain",
+                                  borderRadius: "6px",
+                                  border: "1px solid #e2e8f0",
+                                }}
+                              />
+                            ) : (
+                              <Typography key={idx} variant="body2" sx={{ fontWeight: 600, wordBreak: "break-all" }}>
+                                📄 {decodeURIComponent(mediaUrl).split("/").pop()}
+                              </Typography>
+                            );
+                          })}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" sx={{ color: "#64748b", fontStyle: "italic", fontSize: "0.9rem" }}>
+                          ለዚህ ማንቂያ ምንም ሚዲያ አልተጫነም።
+                        </Typography>
+                      )}
+                    </Paper>
+
+                    {/* Satellite Map card */}
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 0.5,
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "12px",
+                        bgcolor: "#ffffff",
+                        overflow: "hidden",
+                        boxSizing: "border-box"
+                      }}
+                    >
+                      <Wrapper apiKey={"AIzaSyAXk_dX6DI6jxcUdjpvKqGBiKIKjoQoMOs"}>
+                        <IncidentDetailMap report={r} />
+                      </Wrapper>
+                    </Paper>
+                  </Stack>
+                </Grid>
+              </Grid>
+            </Box>
+          ))}
+        </div>
+      )}
     </Box>
   );
 }
