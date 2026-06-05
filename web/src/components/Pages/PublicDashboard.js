@@ -20,7 +20,10 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import { 
   LocationOn as LocationIcon, 
@@ -234,6 +237,38 @@ const translations = {
     am: "ገለጻ (እንግሊዝኛ)",
     en: "Description (English)"
   },
+  filterRegion: {
+    am: "በክልል አጣራ",
+    en: "Filter by Region"
+  },
+  filterYear: {
+    am: "በዓመት አጣራ",
+    en: "Filter by Year"
+  },
+  filterType: {
+    am: "በክስተት ዓይነት አጣራ",
+    en: "Filter by Incident Type"
+  },
+  allRegions: {
+    am: "ሁሉም ክልሎች",
+    en: "All Regions"
+  },
+  allYears: {
+    am: "ሁሉም ዓመታት",
+    en: "All Years"
+  },
+  allTypes: {
+    am: "ሁሉም ዓይነቶች",
+    en: "All Types"
+  },
+  clearFilters: {
+    am: "ማጣሪያዎችን አጽዳ",
+    en: "Clear Filters"
+  },
+  noMatchingReports: {
+    am: "ከተመረጡት ማጣሪያዎች ጋር የሚዛመድ ክስተት አልተገኘም።",
+    en: "No incidents match your selected filters."
+  },
 };
 
 // Helper to get translated text
@@ -402,6 +437,11 @@ function PublicDashboard() {
   // Language state — default Amharic
   const [lang, setLang] = useState('am');
 
+  // Filtering states
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+
   const toggleLang = () => setLang(prev => prev === 'am' ? 'en' : 'am');
 
   // Helper to get display title/description based on language
@@ -411,9 +451,40 @@ function PublicDashboard() {
     ? (config.categories[c]?.label.en || c)
     : (config.categories[c]?.label.am || config.categories[c]?.label.en || c);
 
+  // Derive filter options dynamically from all loaded reports
+  const availableRegions = React.useMemo(() => {
+    return Array.from(new Set(reports.map(r => r.region).filter(Boolean))).sort();
+  }, [reports]);
+
+  const availableYears = React.useMemo(() => {
+    return Array.from(new Set(reports.map(r => {
+      if (!r.incidentDateTime) return null;
+      return new Date(r.incidentDateTime).getFullYear().toString();
+    }).filter(Boolean))).sort((a, b) => b - a);
+  }, [reports]);
+
+  const availableTypes = React.useMemo(() => {
+    return Array.from(new Set(reports.flatMap(r => r.categories || []).filter(Boolean))).sort();
+  }, [reports]);
+
+  // Compute filtered reports list
+  const filteredReports = React.useMemo(() => {
+    return reports.filter(r => {
+      const matchesRegion = !selectedRegion || r.region === selectedRegion;
+      const matchesYear = !selectedYear || (r.incidentDateTime && new Date(r.incidentDateTime).getFullYear().toString() === selectedYear);
+      const matchesType = !selectedType || (r.categories && r.categories.includes(selectedType));
+      return matchesRegion && matchesYear && matchesType;
+    });
+  }, [reports, selectedRegion, selectedYear, selectedType]);
+
   useEffect(() => {
     fetchPublicReports();
   }, []);
+
+  // Update chart data dynamically whenever filtered reports change
+  useEffect(() => {
+    prepareChartData(filteredReports);
+  }, [filteredReports]);
 
   useEffect(() => {
     if (reports.length === 0) return;
@@ -430,7 +501,6 @@ function PublicDashboard() {
       if (res.ok) {
         const data = await res.json();
         setReports(data);
-        prepareChartData(data);
       }
     } catch (err) {
       console.error(err);
@@ -442,9 +512,9 @@ function PublicDashboard() {
   // ——— CSV and JSON Export Utilities ———
   const exportAsCSV = () => {
     setExportAnchorEl(null);
-    if (!reports.length) return;
+    if (!filteredReports.length) return;
     const headers = ['Title', 'Title (English)', 'Region', 'Zone', 'Woreda', 'Severity', 'Categories', 'Incident Date', 'Description', 'Description (English)'];
-    const rows = reports.map(r => [
+    const rows = filteredReports.map(r => [
       `"${(r.title || '').replace(/"/g, '""')}"`,
       `"${(r.titleEn || '').replace(/"/g, '""')}"`,
       `"${r.region || ''}"`,
@@ -468,8 +538,8 @@ function PublicDashboard() {
 
   const exportAsJSON = () => {
     setExportAnchorEl(null);
-    if (!reports.length) return;
-    const sanitized = reports.map(r => ({
+    if (!filteredReports.length) return;
+    const sanitized = filteredReports.map(r => ({
       title: r.title,
       titleEn: r.titleEn || '',
       region: r.region,
@@ -761,7 +831,7 @@ function PublicDashboard() {
                       {t('activeWarnings', lang)}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: '#111827', mt: 0.5 }}>
-                      {reports.length}
+                      {filteredReports.length}
                     </Typography>
                   </Box>
                   <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: 'rgba(37, 99, 235, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
@@ -790,7 +860,7 @@ function PublicDashboard() {
                       {t('criticalThreats', lang)}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: '#991b1b', mt: 0.5 }}>
-                      {reports.filter(r => r.severity?.toLowerCase() === 'high').length}
+                      {filteredReports.filter(r => r.severity?.toLowerCase() === 'high').length}
                     </Typography>
                   </Box>
                   <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: 'rgba(153, 27, 27, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#991b1b' }}>
@@ -819,7 +889,7 @@ function PublicDashboard() {
                       {t('monitoredRegions', lang)}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: '#111827', mt: 0.5 }}>
-                      {new Set(reports.map(r => r.region).filter(Boolean)).size}
+                      {new Set(filteredReports.map(r => r.region).filter(Boolean)).size}
                     </Typography>
                   </Box>
                   <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: 'rgba(55, 65, 81, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}>
@@ -874,6 +944,142 @@ function PublicDashboard() {
               </Grid>
             </Grid>
 
+            {/* Premium Interactive Dashboard Filters */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                mb: 4,
+                borderRadius: 3,
+                bgcolor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)'
+              }}
+            >
+              <Grid container spacing={2.5} alignItems="center">
+                {/* Region Selector */}
+                <Grid item xs={12} sm={4} md={3.5}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="region-filter-label" sx={{ fontWeight: 600, color: '#475569' }}>
+                      {t('filterRegion', lang)}
+                    </InputLabel>
+                    <Select
+                      labelId="region-filter-label"
+                      value={selectedRegion}
+                      label={t('filterRegion', lang)}
+                      onChange={(e) => setSelectedRegion(e.target.value)}
+                      sx={{ 
+                        borderRadius: '10px',
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#2563eb' }
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>{t('allRegions', lang)}</em>
+                      </MenuItem>
+                      {availableRegions.map((region) => (
+                        <MenuItem key={region} value={region}>
+                          {lang === 'en' ? (config.locations[region]?.label.en || region) : (config.locations[region]?.label.am || region)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Year Selector */}
+                <Grid item xs={12} sm={4} md={2.5}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="year-filter-label" sx={{ fontWeight: 600, color: '#475569' }}>
+                      {t('filterYear', lang)}
+                    </InputLabel>
+                    <Select
+                      labelId="year-filter-label"
+                      value={selectedYear}
+                      label={t('filterYear', lang)}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      sx={{ 
+                        borderRadius: '10px',
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#2563eb' }
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>{t('allYears', lang)}</em>
+                      </MenuItem>
+                      {availableYears.map((year) => (
+                        <MenuItem key={year} value={year}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Type of Incident Selector */}
+                <Grid item xs={12} sm={4} md={3.5}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="type-filter-label" sx={{ fontWeight: 600, color: '#475569' }}>
+                      {t('filterType', lang)}
+                    </InputLabel>
+                    <Select
+                      labelId="type-filter-label"
+                      value={selectedType}
+                      label={t('filterType', lang)}
+                      onChange={(e) => setSelectedType(e.target.value)}
+                      sx={{ 
+                        borderRadius: '10px',
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#2563eb' }
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>{t('allTypes', lang)}</em>
+                      </MenuItem>
+                      {availableTypes.map((type) => (
+                        <MenuItem key={type} value={type}>
+                          {getCategoryLabel(type)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Clear / Status Column */}
+                <Grid item xs={12} md={2.5} sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+                  {(selectedRegion || selectedYear || selectedType) ? (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={() => {
+                        setSelectedRegion("");
+                        setSelectedYear("");
+                        setSelectedType("");
+                      }}
+                      sx={{
+                        borderRadius: '10px',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        py: 0.8,
+                        borderColor: '#fca5a5',
+                        color: '#ef4444',
+                        width: '100%',
+                        '&:hover': {
+                          borderColor: '#ef4444',
+                          bgcolor: 'rgba(239, 68, 68, 0.04)'
+                        }
+                      }}
+                    >
+                      {t('clearFilters', lang)}
+                    </Button>
+                  ) : (
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontStyle: 'italic', textAlign: 'right', display: 'block', width: '100%', pr: 1 }}>
+                      {lang === 'en' ? `Showing all ${reports.length} reports` : `ሁሉንም ${reports.length} ሪፖርቶች እያሳየ ነው`}
+                    </Typography>
+                  )}
+                </Grid>
+              </Grid>
+            </Paper>
+
             <Grid container spacing={3.5}>
               {/* 1. INTERACTIVE GIS INCIDENT DISTRIBUTION MAP */}
               <Grid item xs={12}>
@@ -882,7 +1088,7 @@ function PublicDashboard() {
                 </Typography>
                 <Card sx={{ width: '100%', aspectRatio: '1/1', maxHeight: '550px', mx: 'auto', p: 0.5, borderRadius: 3, border: '1px solid #d1d5db' }}>
                   <Wrapper apiKey={"AIzaSyAXk_dX6DI6jxcUdjpvKqGBiKIKjoQoMOs"}>
-                    <PublicIncidentMap results={reports} onViewDetails={(r) => setSelectedReport(r)} lang={lang} />
+                    <PublicIncidentMap results={filteredReports} onViewDetails={(r) => setSelectedReport(r)} lang={lang} />
                   </Wrapper>
                 </Card>
               </Grid>
@@ -1033,15 +1239,15 @@ function PublicDashboard() {
                   )}
                 </Stack>
 
-                {reports.length === 0 ? (
+                {filteredReports.length === 0 ? (
                   <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
                     <Typography variant="body1" color="text.secondary">
-                      {t('noReports', lang)}
+                      {reports.length === 0 ? t('noReports', lang) : t('noMatchingReports', lang)}
                     </Typography>
                   </Paper>
                 ) : (
                   <Grid container spacing={2.5}>
-                    {reports.map((r, idx) => {
+                    {filteredReports.map((r, idx) => {
                       const sevHex = getSeverityHex(r.severity);
 
                       return (
