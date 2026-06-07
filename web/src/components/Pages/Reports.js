@@ -1,11 +1,12 @@
 // src/components/Pages/Reports.js
 import React, { useContext } from "react";
-import { Paper, Box, Button, Typography } from "@mui/material";
+import { Paper, Box, Button, Typography, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
 import withProtectedRoute from "../common/ProtectedRoute";
 import { AuthContext } from "../contexts/AuthContext";
+import config from "../../config";
 
 import buildState from "../../search/buildState";
 import SearchResults from "../search/SearchResults";
@@ -36,7 +37,7 @@ const sortOptions = [
 ];
 
 function Reports() {
-  const { token } = useContext(AuthContext);
+  const { token, userRoles } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const mapFilters = (searchState) => {
@@ -172,34 +173,231 @@ function Reports() {
       </Box>
 
       <SearchProvider config={configurationOptions}>
-        <WithSearch mapContextToProps={({ wasSearched, results }) => ({ wasSearched, results })}>
-          {({ wasSearched, results }) => (
-            <div className="search">
-              <ErrorBoundary>
-                <Layout
-                  header={<SearchBox />}
-                  sideContent={
-                    <div>
-                      {wasSearched && <Sorting sortOptions={sortOptions} />}
-                      <Facet field="byRegion" label="Reports by Region" filterType="any" view={MultiCheckboxFacet} />
-                      <Facet field="categories" label="Categories" filterType="any" view={MultiCheckboxFacet} />
-                      <Facet field="status" label="Status" filterType="any" />
-                      <Facet field="incidentDateTime" label="Incident Year" filterType="any" />
-                      <Facet field="severity" label="Severity" filterType="any" />
-                    </div>
-                  }
-                  bodyContent={<SearchResults results={results} />}
-                  bodyHeader={
-                    <>
-                      {wasSearched && <PagingInfo />}
-                      {wasSearched && <ResultsPerPage options={[10, 20, 50]} />}
-                    </>
-                  }
-                  bodyFooter={<Paging />}
-                />
-              </ErrorBoundary>
-            </div>
-          )}
+        <WithSearch mapContextToProps={({ 
+          wasSearched, 
+          results, 
+          filters, 
+          setFilter, 
+          removeFilter, 
+          facets,
+          sortField,
+          sortDirection,
+          setSort
+        }) => ({ 
+          wasSearched, 
+          results, 
+          filters, 
+          setFilter, 
+          removeFilter, 
+          facets,
+          sortField,
+          sortDirection,
+          setSort
+        })}>
+          {({ 
+            wasSearched, 
+            results, 
+            filters, 
+            setFilter, 
+            removeFilter, 
+            facets,
+            sortField,
+            sortDirection,
+            setSort
+          }) => {
+            const getActiveValue = (field) => {
+              const filter = filters ? filters.find(f => f.field === field) : null;
+              return filter && filter.values && filter.values.length > 0 ? filter.values[0] : "";
+            };
+
+            const handleChange = (field, value) => {
+              if (value === "") {
+                removeFilter(field);
+              } else {
+                setFilter(field, value, "any");
+              }
+            };
+
+            const getSortValue = () => {
+              if (!sortField) return "";
+              return `${sortField}|||${sortDirection}`;
+            };
+
+            const handleSortChange = (value) => {
+              if (!value) {
+                setSort("", "");
+              } else {
+                const [field, direction] = value.split("|||");
+                setSort(field, direction);
+              }
+            };
+
+            return (
+              <div className="search">
+                <ErrorBoundary>
+                  <Layout
+                    header={
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <SearchBox />
+                        
+                        {wasSearched && (
+                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center", mt: 1, p: 2, bgcolor: "#f9fafb", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+                            
+                            {/* Region Dropdown */}
+                            <FormControl size="small" sx={{ minWidth: 150, bgcolor: "#ffffff" }}>
+                              <InputLabel id="region-filter-label">Region</InputLabel>
+                              <Select
+                                labelId="region-filter-label"
+                                id="region-filter"
+                                value={getActiveValue("byRegion")}
+                                label="Region"
+                                onChange={(e) => handleChange("byRegion", e.target.value)}
+                                sx={{ borderRadius: "8px" }}
+                              >
+                                <MenuItem value=""><em>All Regions</em></MenuItem>
+                                {(facets?.byRegion?.[0]?.data || []).map((opt) => (
+                                  <MenuItem key={opt.value} value={opt.value}>
+                                    {config.locations[opt.value]?.label.en || opt.value} ({opt.count})
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+
+                            {/* Year Dropdown */}
+                            <FormControl size="small" sx={{ minWidth: 120, bgcolor: "#ffffff" }}>
+                              <InputLabel id="year-filter-label">Year</InputLabel>
+                              <Select
+                                labelId="year-filter-label"
+                                id="year-filter"
+                                value={getActiveValue("incidentDateTime")}
+                                label="Year"
+                                onChange={(e) => handleChange("incidentDateTime", e.target.value)}
+                                sx={{ borderRadius: "8px" }}
+                              >
+                                <MenuItem value=""><em>All Years</em></MenuItem>
+                                {(facets?.incidentDateTime?.[0]?.data || []).map((opt) => (
+                                  <MenuItem key={opt.value} value={opt.value}>
+                                    {opt.value} ({opt.count})
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+
+                            {/* Category Dropdown */}
+                            <FormControl size="small" sx={{ minWidth: 150, bgcolor: "#ffffff" }}>
+                              <InputLabel id="category-filter-label">Category</InputLabel>
+                              <Select
+                                labelId="category-filter-label"
+                                id="category-filter"
+                                value={getActiveValue("categories")}
+                                label="Category"
+                                onChange={(e) => handleChange("categories", e.target.value)}
+                                sx={{ borderRadius: "8px" }}
+                              >
+                                <MenuItem value=""><em>All Categories</em></MenuItem>
+                                {(facets?.categories?.[0]?.data || []).map((opt) => (
+                                  <MenuItem key={opt.value} value={opt.value}>
+                                    {config.categories[opt.value]?.label.en || opt.value} ({opt.count})
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+
+                            {/* Severity Dropdown */}
+                            <FormControl size="small" sx={{ minWidth: 130, bgcolor: "#ffffff" }}>
+                              <InputLabel id="severity-filter-label">Severity</InputLabel>
+                              <Select
+                                labelId="severity-filter-label"
+                                id="severity-filter"
+                                value={getActiveValue("severity")}
+                                label="Severity"
+                                onChange={(e) => handleChange("severity", e.target.value)}
+                                sx={{ borderRadius: "8px" }}
+                              >
+                                <MenuItem value=""><em>All Severities</em></MenuItem>
+                                {(facets?.severity?.[0]?.data || []).map((opt) => (
+                                  <MenuItem key={opt.value} value={opt.value}>
+                                    {opt.value.charAt(0).toUpperCase() + opt.value.slice(1)} ({opt.count})
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+
+                            {/* Status Dropdown */}
+                            <FormControl size="small" sx={{ minWidth: 130, bgcolor: "#ffffff" }}>
+                              <InputLabel id="status-filter-label">Status</InputLabel>
+                              <Select
+                                labelId="status-filter-label"
+                                id="status-filter"
+                                value={getActiveValue("status")}
+                                label="Status"
+                                onChange={(e) => handleChange("status", e.target.value)}
+                                sx={{ borderRadius: "8px" }}
+                              >
+                                <MenuItem value=""><em>All Statuses</em></MenuItem>
+                                {(facets?.status?.[0]?.data || []).map((opt) => (
+                                  <MenuItem key={opt.value} value={opt.value}>
+                                    {opt.value.charAt(0).toUpperCase() + opt.value.slice(1)} ({opt.count})
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+
+                            {/* Sorting Dropdown */}
+                            <FormControl size="small" sx={{ minWidth: 200, bgcolor: "#ffffff", ml: "auto" }}>
+                              <InputLabel id="sort-filter-label">Sort By</InputLabel>
+                              <Select
+                                labelId="sort-filter-label"
+                                id="sort-filter"
+                                value={getSortValue()}
+                                label="Sort By"
+                                onChange={(e) => handleSortChange(e.target.value)}
+                                sx={{ borderRadius: "8px" }}
+                              >
+                                {sortOptions.map((opt) => {
+                                  const val = opt.value ? `${opt.value}|||${opt.direction}` : "";
+                                  return (
+                                    <MenuItem key={val} value={val}>
+                                      {opt.name}
+                                    </MenuItem>
+                                  );
+                                })}
+                              </Select>
+                            </FormControl>
+
+                            {/* Clear Filters Button */}
+                            {filters && filters.length > 0 && (
+                              <Button
+                                variant="text"
+                                color="error"
+                                size="small"
+                                onClick={() => {
+                                  filters.forEach((f) => removeFilter(f.field));
+                                }}
+                                sx={{ fontWeight: 700, textTransform: "none" }}
+                              >
+                                Clear
+                              </Button>
+                            )}
+
+                          </Box>
+                        )}
+                      </Box>
+                    }
+                    sideContent={null}
+                    bodyContent={<SearchResults results={results} token={token} userRoles={userRoles} />}
+                    bodyHeader={
+                      <>
+                        {wasSearched && <PagingInfo />}
+                        {wasSearched && <ResultsPerPage options={[10, 20, 50]} />}
+                      </>
+                    }
+                    bodyFooter={<Paging />}
+                  />
+                </ErrorBoundary>
+              </div>
+            );
+          }}
         </WithSearch>
       </SearchProvider>
     </Paper>

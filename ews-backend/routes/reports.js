@@ -742,6 +742,23 @@ router.put("/:id", authenticate(), async (req, res) => {
     }
 });
 
+// DELETE /api/reports/:id
+router.delete("/:id", authenticate(['admin']), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const reportId = getDbId(id);
+        await prisma.reports.deleteMany({
+            where: {
+                report_id: reportId
+            }
+        });
+        res.json({ message: "Report deleted successfully" });
+    } catch (err) {
+        console.error("Delete Report Error:", err);
+        res.status(500).json({ error: "Server error deleting report" });
+    }
+});
+
 // POST /api/reports/digitize (Digitize reports from Word or PDF)
 router.post("/digitize", authenticate(), express.raw({ type: '*/*', limit: '20mb' }), async (req, res) => {
     try {

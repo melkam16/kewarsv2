@@ -520,6 +520,31 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
         return res.json(updated);
     });
 
+    // ---------------- DELETE REPORT ----------------
+    // DELETE /api/reports/:id
+    app.delete("/api/reports/:id", requireAuth, (req, res) => {
+        const { id } = req.params;
+        // Check role - check if user.role === 'admin'
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ error: "Forbidden: Admins only" });
+        }
+        const reportId = id.startsWith('rep-') ? id : `rep-${id}`;
+        const rawId = id.replace('rep-', '');
+        
+        // Remove from reports
+        reports.delete(reportId);
+        reports.delete(rawId);
+        
+        // Also remove any drafts for this report
+        for (const [key, val] of drafts.entries()) {
+            if (key.startsWith(`${reportId}:`) || key.startsWith(`${rawId}:`)) {
+                drafts.delete(key);
+            }
+        }
+        
+        return res.json({ message: "Report deleted successfully" });
+    });
+
     // ---------------- SEARCH STUDENTS ----------------
     // POST /api/students/search
     app.post("/api/students/search", requireAuth, (req, res) => {

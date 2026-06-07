@@ -17,6 +17,8 @@ import {
   Switch,
   AppBar,
   Toolbar,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { 
   LocationOn as LocationIcon, 
@@ -24,6 +26,7 @@ import {
   Layers as LayersIcon,
   Visibility as VisibilityIcon
 } from '@mui/icons-material';
+import API_BASE from '../../api/apiBase';
 import { Wrapper } from "@googlemaps/react-wrapper";
 import { createTheme } from '@mui/material/styles';
 import { ThemeProvider } from "@emotion/react";
@@ -162,13 +165,41 @@ const IncidentMap = ({ results }) => {
   return <div ref={ref} style={{ width: "100%", height: "100%", borderRadius: "12px" }} />;
 };
 
-const SearchResults = ({ results = [] }) => {
+const SearchResults = ({ results = [], token, userRoles }) => {
   const history = useNavigate();
   const [isGridView, setIsGridView] = useState(true);
-  const [showMap, setShowMap] = useState(true);
+  const [activeTab, setActiveTab] = useState(0); // 0 for catalog list/grid, 1 for map
   const [showCombineReports, setShowCombineReports] = useState(false);
   const [selectedReports, setSelectedReports] = useState([]);
   const [checkBoxStates, setCheckBoxStates] = useState({});
+
+  const isAdmin = userRoles && userRoles.includes("admin");
+
+  const handleArchive = async (reportId) => {
+    if (window.confirm("Are you sure you want to archive/delete this report? This action cannot be undone.")) {
+      try {
+        const cleanId = reportId.replace("rep-", "");
+        const response = await fetch(`${API_BASE}/api/reports/${cleanId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || errorData.error || "Failed to delete report");
+        }
+
+        alert("Report deleted successfully");
+        window.location.reload();
+      } catch (err) {
+        console.error("Error deleting report:", err);
+        alert(`Error: ${err.message}`);
+      }
+    }
+  };
 
   const combineReports = () => {
     setShowCombineReports(true);
@@ -223,7 +254,7 @@ const SearchResults = ({ results = [] }) => {
           }}
         >
           <ThemeProvider theme={theme}>
-            <Toolbar sx={{ justifyContent: 'space-between', px: 2 }}>
+            <Toolbar sx={{ justifyContent: 'space-between', px: 2, flexWrap: 'wrap', gap: 1 }}>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Button 
                   variant="outlined" 
@@ -243,17 +274,37 @@ const SearchResults = ({ results = [] }) => {
                   Combine Reports ({selectedReports.length})
                 </Button>
               </Stack>
+
+              <Tabs 
+                value={activeTab} 
+                onChange={(e, newValue) => setActiveTab(newValue)}
+                sx={{
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#2563eb',
+                  },
+                  '& .MuiTab-root': {
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    color: '#4b5563',
+                    '&.Mui-selected': {
+                      color: '#2563eb',
+                    }
+                  }
+                }}
+              >
+                <Tab label="Report Catalog" id="tab-report-catalog" />
+                <Tab label="Incident Map" id="tab-incident-map" />
+              </Tabs>
+
               <Stack direction="row" spacing={3} alignItems="center">
-                <FormGroup>
-                  <FormControlLabel 
-                    control={<Switch checked={showMap} onChange={() => setShowMap(!showMap)} />}                     label={<Typography variant="body2" sx={{ fontWeight: 600, color: '#4b5563' }}>Show Map</Typography>} 
-                  />
-                </FormGroup>
-                <FormGroup>
-                  <FormControlLabel 
-                    control={<Switch checked={isGridView} onChange={() => setIsGridView(!isGridView)} />}                     label={<Typography variant="body2" sx={{ fontWeight: 600, color: '#4b5563' }}>Grid Layout</Typography>} 
-                  />
-                </FormGroup>
+                {activeTab === 0 && (
+                  <FormGroup>
+                    <FormControlLabel 
+                      control={<Switch checked={isGridView} onChange={() => setIsGridView(!isGridView)} />}                     label={<Typography variant="body2" sx={{ fontWeight: 600, color: '#4b5563' }}>Grid Layout</Typography>} 
+                    />
+                  </FormGroup>
+                )}
               </Stack>
             </Toolbar>
           </ThemeProvider>
@@ -261,8 +312,8 @@ const SearchResults = ({ results = [] }) => {
       )}
 
       {/* Interactive Incidents Map Overview Card */}
-      {showMap && results.length > 0 && (
-        <Box sx={{ width: "100%", height: "380px", mb: 3 }}>
+      {activeTab === 1 && results.length > 0 && (
+        <Box sx={{ width: "100%", height: "600px", mb: 3 }}>
           <Card 
             sx={{ 
               height: "100%", 
@@ -279,10 +330,19 @@ const SearchResults = ({ results = [] }) => {
         </Box>
       )}
 
+      {results.length === 0 && (
+        <Box sx={{ py: 8, textAlign: 'center' }}>
+          <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600 }}>
+            No reports found matching the selected filters.
+          </Typography>
+        </Box>
+      )}
+
       <Divider sx={{ my: 2 }} />
 
-      {isGridView ? (
-        <Box sx={{ width: '100%' }}>
+      {activeTab === 0 && (
+        isGridView ? (
+          <Box sx={{ width: '100%' }}>
           <Grid container spacing={2.5}>
             {results.length > 0 &&
               results.map((result, index) => {
@@ -369,25 +429,47 @@ const SearchResults = ({ results = [] }) => {
                       <Divider sx={{ mt: 'auto' }} />
 
                       {/* Actions Footer Bar */}
-                      <CardActions sx={{ px: 1.5, py: 1.2, justifyContent: 'space-between', bgcolor: '#f9fafb', flexWrap: 'nowrap' }}>
-                        <Button 
-                          size="small" 
-                          variant="contained" 
-                          startIcon={<VisibilityIcon sx={{ fontSize: '0.9rem !important' }} />}
-                          onClick={() => viewDetailClicked(result.reportId?.raw)}
-                          sx={{ 
-                            borderRadius: "8px", 
-                            fontWeight: 700,
-                            px: 1.2,
-                            py: 0.6,
-                            fontSize: '0.72rem',
-                            minWidth: 'auto',
-                            whiteSpace: 'nowrap',
-                            lineHeight: 1.2
-                          }}
-                        >
-                          Details
-                        </Button>
+                      <CardActions sx={{ px: 1.5, py: 1.2, justifyContent: 'space-between', bgcolor: '#f9fafb', flexWrap: 'nowrap', gap: 1 }}>
+                        <Stack direction="row" spacing={1}>
+                          <Button 
+                            size="small" 
+                            variant="contained" 
+                            startIcon={<VisibilityIcon sx={{ fontSize: '0.9rem !important' }} />}
+                            onClick={() => viewDetailClicked(result.reportId?.raw)}
+                            sx={{ 
+                              borderRadius: "8px", 
+                              fontWeight: 700,
+                              px: 1.2,
+                              py: 0.6,
+                              fontSize: '0.72rem',
+                              minWidth: 'auto',
+                              whiteSpace: 'nowrap',
+                              lineHeight: 1.2
+                            }}
+                          >
+                            Details
+                          </Button>
+                          {isAdmin && (
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              color="error"
+                              onClick={() => handleArchive(result.reportId?.raw)}
+                              sx={{ 
+                                borderRadius: "8px", 
+                                fontWeight: 700,
+                                px: 1.2,
+                                py: 0.6,
+                                fontSize: '0.72rem',
+                                minWidth: 'auto',
+                                whiteSpace: 'nowrap',
+                                lineHeight: 1.2
+                              }}
+                            >
+                              Archive
+                            </Button>
+                          )}
+                        </Stack>
                         <Stack direction="row" spacing={0.2} alignItems="center" sx={{ flexShrink: 0 }}>
                           <Checkbox 
                             size="small" 
@@ -510,6 +592,25 @@ const SearchResults = ({ results = [] }) => {
                               >
                                 Details
                               </Button>
+                              {isAdmin && (
+                                <Button 
+                                  size="small" 
+                                  variant="outlined" 
+                                  color="error"
+                                  onClick={() => handleArchive(result.reportId?.raw)}
+                                  sx={{ 
+                                    borderRadius: "8px", 
+                                    fontWeight: 700,
+                                    px: 1.5,
+                                    py: 0.7,
+                                    fontSize: '0.75rem',
+                                    minWidth: 'auto',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  Archive
+                                </Button>
+                              )}
                               <Stack direction="row" spacing={0.2} alignItems="center">
                                 <Checkbox 
                                   size="small" 
@@ -532,7 +633,7 @@ const SearchResults = ({ results = [] }) => {
               })}
           </Grid>
         </Box>
-      )}
+      ))}
     </React.Fragment>
   );
 };
