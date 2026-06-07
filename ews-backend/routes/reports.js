@@ -177,11 +177,11 @@ router.post("/search/reports", authenticate(), async (req, res) => {
             if (dbField === "incidentDateTime") dbField = "incident_date_time";
 
             if (dbField === "incident_date_time") {
-                const cleanValues = filter.values.filter(v => typeof v === 'string' && v.includes('-'));
+                const cleanValues = filter.values.filter(v => typeof v === 'string' && v.match(/^\d{4}$/));
                 const orConditions = cleanValues.map(val => {
-                    const [year, month] = val.split('-').map(Number);
-                    const startDate = new Date(Date.UTC(year, month - 1, 1));
-                    const endDate = new Date(Date.UTC(year, month, 1));
+                    const year = Number(val);
+                    const startDate = new Date(Date.UTC(year, 0, 1));
+                    const endDate = new Date(Date.UTC(year + 1, 0, 1));
                     return {
                         incident_date_time: {
                             gte: startDate,
@@ -265,10 +265,10 @@ router.post("/search/reports", authenticate(), async (req, res) => {
         };
 
         latestReports.forEach((r) => {
-            // Incident Date (monthly)
+            // Incident Year (yearly)
             if (r.incident_date_time) {
-                const month = new Date(r.incident_date_time).toISOString().substring(0, 7); // "YYYY-MM"
-                aggs.incidentDateTime[month] = (aggs.incidentDateTime[month] || 0) + 1;
+                const year = new Date(r.incident_date_time).toISOString().substring(0, 4); // "YYYY"
+                aggs.incidentDateTime[year] = (aggs.incidentDateTime[year] || 0) + 1;
             }
 
             // Region

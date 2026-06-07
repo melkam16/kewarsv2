@@ -184,7 +184,7 @@ function Reports() {
                       <Facet field="byRegion" label="Reports by Region" filterType="any" view={MultiCheckboxFacet} />
                       <Facet field="categories" label="Categories" filterType="any" view={MultiCheckboxFacet} />
                       <Facet field="status" label="Status" filterType="any" />
-                      <Facet field="incidentDateTime" label="Incident Date" filterType="any" />
+                      <Facet field="incidentDateTime" label="Incident Year" filterType="any" />
                       <Facet field="severity" label="Severity" filterType="any" />
                     </div>
                   }

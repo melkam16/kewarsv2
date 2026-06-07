@@ -346,7 +346,7 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
             byRegion: {},
             categories: {},
             status: {},
-            incidentDateTime: {}, // can be empty or buckets by year/month
+            incidentDateTime: {},
             severity: {},
         };
 
@@ -360,6 +360,11 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
 
             const severity = r.severity || "unknown";
             aggs.severity[severity] = (aggs.severity[severity] || 0) + 1;
+
+            if (r.incidentDateTime) {
+                const year = new Date(r.incidentDateTime).toISOString().substring(0, 4);
+                aggs.incidentDateTime[year] = (aggs.incidentDateTime[year] || 0) + 1;
+            }
         });
 
         // convert to arrays similar to Elasticsearch aggregations used by frontend
@@ -370,7 +375,7 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
             byRegion: toBuckets(aggs.byRegion),
             categories: toBuckets(aggs.categories),
             status: toBuckets(aggs.status),
-            incidentDateTime: [], // not aggregated here
+            incidentDateTime: toBuckets(aggs.incidentDateTime),
             severity: toBuckets(aggs.severity),
         };
     }
@@ -390,6 +395,16 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
                 const field = f.field;
                 const values = f.values || [];
                 if (!values.length) return;
+
+                if (field === "incidentDateTime") {
+                    list = list.filter((r) => {
+                        if (!r.incidentDateTime) return false;
+                        const year = new Date(r.incidentDateTime).toISOString().substring(0, 4);
+                        return values.includes(year);
+                    });
+                    return;
+                }
+
                 list = list.filter((r) => {
                     const val = (function getField(obj, fld) {
                         // support dotted fields loosely
