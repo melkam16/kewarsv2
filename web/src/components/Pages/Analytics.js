@@ -280,29 +280,29 @@ export default function Analytics() {
     const element = document.querySelector(".print-only-section");
     if (!element) return;
 
-    // Clone element to modify display for html2pdf rendering without showing on screen
-    const cloned = element.cloneNode(true);
-    cloned.classList.remove("print-only-section"); // Strip the hidden class so html2canvas renders the layout
-    cloned.style.display = "block";
-    cloned.style.position = "absolute";
-    cloned.style.left = "-9999px";
-    cloned.style.top = "-9999px";
-    cloned.style.width = "800px";
-    cloned.style.backgroundColor = "#ffffff";
-    document.body.appendChild(cloned);
-
     const opt = {
       margin:       15,
       filename:     `InternalReport_${new Date().toISOString().slice(0, 10)}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        onclone: (clonedDoc) => {
+          const printSection = clonedDoc.querySelector(".print-only-section");
+          if (printSection) {
+            printSection.classList.remove("print-only-section");
+            printSection.style.display = "block";
+            printSection.style.width = "800px";
+            printSection.style.backgroundColor = "#ffffff";
+          }
+        }
+      },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
-    html2pdf().from(cloned).set(opt).save().then(() => {
-      document.body.removeChild(cloned);
-    });
+    html2pdf().from(element).set(opt).save();
   };
 
   const getSeverityColor = (sev) => {
