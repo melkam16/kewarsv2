@@ -22,8 +22,9 @@ import { ReportStatus } from "../../config";
 import API_BASE from '../../api/apiBase';
 const fullWidth = 12;
 
-function ReportDetail({ readOnly }) {
-  const { id } = useParams();
+export function ReportDetail({ id: idProp, readOnly, onClose }) {
+  const { id: routeId } = useParams();
+  const id = idProp || routeId;
   const navigate = useNavigate();
   const { token } = useContext(AuthContext);
 
@@ -107,6 +108,9 @@ function ReportDetail({ readOnly }) {
       });
 
       setEdited({ draft: false, main: true });
+      if (onClose) {
+        setTimeout(() => onClose(true), 1000);
+      }
     } catch (err) {
       setOutcome({
         show: true,
@@ -138,6 +142,9 @@ function ReportDetail({ readOnly }) {
       });
 
       setEdited({ draft: false, main: false });
+      if (onClose) {
+        setTimeout(() => onClose(true), 1000);
+      }
     } catch (err) {
       setOutcome({
         show: true,
@@ -169,6 +176,9 @@ function ReportDetail({ readOnly }) {
       });
 
       setEdited({ draft: false, main: false });
+      if (onClose) {
+        setTimeout(() => onClose(true), 1000);
+      }
     } catch (err) {
       setOutcome({
         show: true,
@@ -264,7 +274,7 @@ function ReportDetail({ readOnly }) {
                   spacing={2}
                   justifyContent="center"
                 >
-                  <Button onClick={() => navigate(-1)}>
+                  <Button onClick={() => onClose ? onClose(false) : navigate(-1)}>
                     Cancel
                   </Button>
 

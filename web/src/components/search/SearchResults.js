@@ -19,6 +19,8 @@ import {
   Toolbar,
   Tabs,
   Tab,
+  Dialog,
+  DialogContent,
 } from '@mui/material';
 import { 
   LocationOn as LocationIcon, 
@@ -34,6 +36,7 @@ import { ThemeProvider } from "@emotion/react";
 import "@elastic/react-search-ui-views/lib/styles/styles.css";
 
 import CombineReports from "../Dialogs/CombineReports";
+import { ReportDetail } from "../Pages/ReportDetail";
 import { EthDateTimeConverter } from "../../ethDateTime";
 import config from '../../config';
 
@@ -49,7 +52,7 @@ const theme = createTheme({
 });
 
 // Interactive Google Incident Map Component
-const IncidentMap = ({ results }) => {
+const IncidentMap = ({ results, onViewDetail }) => {
   const navigate = useNavigate();
   const ref = React.useRef(null);
   const [map, setMap] = React.useState(null);
@@ -139,7 +142,11 @@ const IncidentMap = ({ results }) => {
             const btn = document.getElementById(`infowindow-btn-${r.id?.raw}`);
             if (btn) {
               btn.addEventListener("click", () => {
-                navigate(`/reports/${r.id?.raw}`);
+                if (onViewDetail) {
+                  onViewDetail(r.id?.raw);
+                } else {
+                  navigate(`/reports/${r.id?.raw}`);
+                }
               });
             }
           });
@@ -172,6 +179,8 @@ const SearchResults = ({ results = [], token, userRoles }) => {
   const [showCombineReports, setShowCombineReports] = useState(false);
   const [selectedReports, setSelectedReports] = useState([]);
   const [checkBoxStates, setCheckBoxStates] = useState({});
+  const [selectedReportId, setSelectedReportId] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const isAdmin = userRoles && userRoles.includes("admin");
 
@@ -216,7 +225,8 @@ const SearchResults = ({ results = [], token, userRoles }) => {
   };
 
   const viewDetailClicked = (reportId) => {
-    history(`/reports/${reportId}`);
+    setSelectedReportId(reportId);
+    setIsDetailOpen(true);
   };
 
   const onCombineClosed = () => {
@@ -324,7 +334,7 @@ const SearchResults = ({ results = [], token, userRoles }) => {
             }}
           >
             <Wrapper apiKey={"AIzaSyAXk_dX6DI6jxcUdjpvKqGBiKIKjoQoMOs"}>
-              <IncidentMap results={results} />
+              <IncidentMap results={results} onViewDetail={viewDetailClicked} />
             </Wrapper>
           </Card>
         </Box>
@@ -634,6 +644,31 @@ const SearchResults = ({ results = [], token, userRoles }) => {
           </Grid>
         </Box>
       ))}
+
+      <Dialog 
+        open={isDetailOpen} 
+        onClose={() => setIsDetailOpen(false)} 
+        maxWidth="lg" 
+        fullWidth
+        scroll="paper"
+        PaperProps={{
+          sx: { borderRadius: '16px', p: 1 }
+        }}
+      >
+        <DialogContent>
+          {selectedReportId && (
+            <ReportDetail 
+              id={selectedReportId} 
+              onClose={(refreshed) => {
+                setIsDetailOpen(false);
+                if (refreshed) {
+                  window.location.reload();
+                }
+              }} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </React.Fragment>
   );
 };
