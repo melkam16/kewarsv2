@@ -742,6 +742,206 @@ router.put("/:id", authenticate(), async (req, res) => {
     }
 });
 
+// POST /api/reports/digitize (Digitize reports from Word or PDF)
+router.post("/digitize", authenticate(), express.raw({ type: '*/*', limit: '20mb' }), async (req, res) => {
+    try {
+        const filename = decodeURIComponent(req.headers['x-file-name'] || 'file');
+        const extension = filename.split('.').pop().toLowerCase();
+        
+        const fileBuffer = req.body;
+        if (!fileBuffer || fileBuffer.length === 0) {
+            return res.status(400).json({ error: "Empty file body" });
+        }
+
+        console.log(`Digitizing file ${filename} (ext: ${extension})...`);
+
+        let extractedText = "";
+        if (extension === 'docx') {
+            const mammoth = (await import('mammoth')).default;
+            const result = await mammoth.extractRawText({ buffer: fileBuffer });
+            extractedText = result.value;
+        } else if (extension === 'pdf') {
+            const pdfParse = (await import('pdf-parse')).default;
+            const data = await pdfParse(fileBuffer);
+            extractedText = data.text;
+        } else {
+            return res.status(400).json({ error: "Unsupported file type. Please upload a .docx or .pdf file." });
+        }
+
+        if (!extractedText || extractedText.trim().length === 0) {
+            return res.status(400).json({ error: "No text could be extracted from the file." });
+        }
+
+        let reportsList = [];
+        const apiKey = process.env.GEMINI_API_KEY;
+
+        if (apiKey) {
+            console.log("Using Gemini API for report extraction & categorization...");
+            try {
+                const prompt = `You are an AI assistant designed to process early warning reports from text extracted from documents.
+Below is the text extracted from a document that contains one or multiple warning reports.
+Analyze the text and extract all warning reports. For each report, output a structured JSON object.
+
+System Categories list:
+The available system category IDs are:
+- "እስራት" (Arrest)
+- "አፈና" (Kidnapping)
+- "ድብደባ" (Attack)
+- "ግድያ" (Killing)
+- "ስርቆት" (Burglary)
+- "ዘረፋ" (Robbery)
+- "ውድመት" (Vandalism)
+- "ቅድመ ክስተት" (Pre-event)
+
+Map the report categories to one or more of these EXACT system category IDs. Do not make up categories.
+
+Allowed Severities: "low", "medium", "high".
+
+For each report, extract:
+- title: A concise descriptive title in Amharic (or English if the source is English).
+- description: A detailed description of the incident/event in Amharic (or English).
+- titleEn: English translation of the title.
+- descriptionEn: English translation of the description.
+- severity: "low", "medium", or "high".
+- categories: An array of matched category IDs from the allowed list (e.g. ["እስራት", "ድብደባ"]).
+- incidentLocation: An object containing:
+  - region: Region name in Ethiopia (e.g. "Addis Ababa", "Tigray", "Somali", "Amhara", "Oromia", "Afar", "Benishangul-Gumuz", "Sidama", "SNNPR", "Gambela", "Harari"). Match to standard English region names.
+  - zone: Zone name.
+  - woreda: Woreda name.
+  - other: Any other descriptive location details.
+- incidentDateTime: An ISO 8601 date-time string (infer from text if a date/time is mentioned, otherwise use the current time).
+- eyewitness: A boolean indicating if the report is based on eyewitness account.
+- notes: Any analyst notes or additional observations.
+
+Output the result as a raw JSON array of objects. Do not wrap it in markdown code blocks like \`\`\`json. The output must be valid JSON only.
+
+Extracted Text:
+${extractedText}`;
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json"
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`Gemini API error: ${errText}`);
+                }
+
+                const resJson = await response.json();
+                const textOutput = resJson.candidates[0].content.parts[0].text;
+                const parsed = JSON.parse(textOutput);
+
+                if (Array.isArray(parsed)) {
+                    reportsList = parsed;
+                } else if (parsed.reports && Array.isArray(parsed.reports)) {
+                    reportsList = parsed.reports;
+                } else if (typeof parsed === 'object') {
+                    reportsList = [parsed];
+                }
+            } catch (geminiError) {
+                console.error("Gemini processing failed, falling back to rule-based parser:", geminiError);
+                reportsList = fallbackParser(extractedText);
+            }
+        } else {
+            console.log("No GEMINI_API_KEY found, using rule-based fallback parser...");
+            reportsList = fallbackParser(extractedText);
+        }
+
+        res.json({ reports: reportsList });
+    } catch (err) {
+        console.error("Digitization Error:", err);
+        res.status(500).json({ error: "Failed to digitize document", details: err.message });
+    }
+});
+
+// Helper rule-based fallback parser
+function fallbackParser(text) {
+    let blocks = text.split(/(?=Report \d+:|Incident \d+:|Warning \d+:|\bReport\b|\bIncident\b)/gi);
+    if (blocks.length <= 1) {
+        blocks = text.split(/\n\s*\n/);
+    }
+
+    const reportsList = [];
+
+    for (let block of blocks) {
+        const cleanBlock = block.trim();
+        if (!cleanBlock || cleanBlock.length < 20) continue;
+
+        const lines = cleanBlock.split('\n').map(l => l.trim()).filter(Boolean);
+        if (!lines.length) continue;
+
+        let title = lines[0];
+        if (title.length > 100) {
+            title = title.substring(0, 100) + '...';
+        }
+
+        const description = lines.slice(1).join('\n');
+
+        let severity = 'low';
+        const lowerText = cleanBlock.toLowerCase();
+        if (lowerText.includes('high') || lowerText.includes('critical') || lowerText.includes('urgent') || lowerText.includes('ከፍተኛ')) {
+            severity = 'high';
+        } else if (lowerText.includes('medium') || lowerText.includes('moderate') || lowerText.includes('መካከለኛ')) {
+            severity = 'medium';
+        }
+
+        const matchedCategories = [];
+        const catKeywords = {
+            "እስራት": ['arrest', 'detain', 'police', 'jail', 'እስራት', 'እስር', 'ታሰረ', 'የቁጥጥር'],
+            "አፈና": ['kidnap', 'abduct', 'hostage', 'አፈና', 'ታፈነ', 'መታፈን'],
+            "ድብደባ": ['attack', 'assault', 'beat', 'strike', 'clash', 'ድብደባ', 'ተደበደበ', 'ግጭት'],
+            "ግድያ": ['kill', 'murder', 'death', 'dead', 'casualty', 'ግድያ', 'ሞተ', 'ተገደለ'],
+            "ስርቆት": ['theft', 'steal', 'burglary', 'stolen', 'ስርቆት', 'ሌባ', 'ተሰረቀ'],
+            "ዘረፋ": ['robbery', 'loot', 'plunder', 'ዘረፋ', 'ተዘረፈ'],
+            "ውድመት": ['destroy', 'damage', 'vandal', 'burn', 'wreck', 'ውድመት', 'ተቃጠለ', 'ፈረሰ'],
+            "ቅድመ ክስተት": ['warn', 'pre-event', 'forecast', 'threat', 'ቅድመ', 'ማስጠንቀቂያ', 'ምልክት']
+        };
+
+        for (const [catId, keywords] of Object.entries(catKeywords)) {
+            if (keywords.some(kw => lowerText.includes(kw))) {
+                matchedCategories.push(catId);
+            }
+        }
+
+        let region = '';
+        const regions = ["Addis Ababa", "Tigray", "Somali", "Amhara", "Oromia", "Afar", "Benishangul-Gumuz", "Sidama", "Gambela", "Harari", "SNNPR"];
+        for (const reg of regions) {
+            if (lowerText.includes(reg.toLowerCase())) {
+                region = reg;
+                break;
+            }
+        }
+
+        reportsList.push({
+            title,
+            description,
+            titleEn: '',
+            descriptionEn: '',
+            severity,
+            categories: matchedCategories,
+            incidentLocation: {
+                region,
+                zone: '',
+                woreda: '',
+                other: ''
+            },
+            incidentDateTime: new Date().toISOString(),
+            eyewitness: false,
+            notes: 'Extracted via fallback parser.'
+        });
+    }
+
+    return reportsList;
+}
+
 // POST /api/reports/upload (Upload file to Vercel Blob)
 router.post("/upload", authenticate(), express.raw({ type: '*/*', limit: '20mb' }), async (req, res) => {
     try {
