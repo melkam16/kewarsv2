@@ -293,6 +293,9 @@ export default function Analytics() {
           if (printSection) {
             printSection.classList.remove("print-only-section");
             printSection.style.display = "block";
+            printSection.style.position = "relative";
+            printSection.style.left = "0";
+            printSection.style.top = "0";
             printSection.style.width = "800px";
             printSection.style.backgroundColor = "#ffffff";
           }
@@ -327,7 +330,12 @@ export default function Analytics() {
         {`
           @media screen {
             .print-only-section {
-              display: none !important;
+              position: absolute !important;
+              left: -9999px !important;
+              top: -9999px !important;
+              width: 800px !important;
+              background-color: #ffffff !important;
+              display: block !important;
             }
           }
           @media print {
