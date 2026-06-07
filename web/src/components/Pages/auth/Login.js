@@ -20,6 +20,7 @@ import KeyIcon from '@mui/icons-material/Key';
 import PublicIcon from '@mui/icons-material/Language';
 import axios from '../../../api/axios';
 import { AuthContext } from '../../contexts/AuthContext';
+import kewarsLogo from '../../../assets/logo.png';
 
 const Login = () => {
     const { login } = useContext(AuthContext);
@@ -112,25 +113,21 @@ const Login = () => {
             }}
           >
             <CardContent sx={{ p: 4 }}>
-              {/* Professional Shield Logo */}
+              {/* Professional Kewars Logo */}
               <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                 <Box
+                  component="img"
+                  src={kewarsLogo}
+                  alt="KEWARS Logo"
                   sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '16px',
-                    background: '#1f2937',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(31, 41, 55, 0.2)',
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+                    border: '3px solid #f3f4f6',
                   }}
-                >
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" fill="#2563eb" opacity="0.9" />
-                    <path d="M10 15.5L7.5 13L8.91 11.59L10 12.67L14.59 8.09L16 9.5L10 15.5Z" fill="#ffffff" />
-                  </svg>
-                </Box>
+                />
               </Box>
 
               <Typography variant="h5" align="center" sx={{ color: '#111827', fontWeight: 800, mb: 0.5, letterSpacing: '-0.02em' }}>

@@ -51,6 +51,7 @@ import html2pdf from "html2pdf.js";
 import config from "../../config";
 import { AuthContext } from "../contexts/AuthContext";
 import API_BASE from "../../api/apiBase";
+import kewarsLogo from "../../assets/logo.png";
 
 ChartJS.register(
   ArcElement,
@@ -890,21 +891,17 @@ export default function Analytics() {
             {/* Top Brand Info */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Box
+                component="img"
+                src={kewarsLogo}
+                alt="KEWARS Logo"
                 sx={{
                   width: 44,
                   height: 44,
-                  borderRadius: "10px",
-                  background: "#2563eb",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: "2px solid #e5e7eb",
                 }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" fill="#ffffff" opacity="0.95" />
-                  <path d="M10 15.5L7.5 13L8.91 11.59L10 12.67L14.59 8.09L16 9.5L10 15.5Z" fill="#2563eb" />
-                </svg>
-              </Box>
+              />
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: "-0.01em" }}>
                   KEWARS

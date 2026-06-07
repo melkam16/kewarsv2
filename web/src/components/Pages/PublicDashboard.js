@@ -56,6 +56,7 @@ import { Bar, Pie } from "react-chartjs-2";
 import config from '../../config';
 import MediaViewer from '../mediaViewer';
 import API_BASE from '../../api/apiBase';
+import kewarsLogo from '../../assets/logo.png';
 
 
 ChartJS.register(
@@ -647,23 +648,19 @@ function PublicDashboard() {
       <AppBar position="sticky" sx={{ bgcolor: '#111827', borderBottom: '1px solid #1f2937', boxShadow: 'none' }}>
         <Toolbar sx={{ justifyContent: 'space-between', maxWidth: '1280px', width: '100%', margin: 'auto', px: { xs: 2, md: 4 } }}>
           <Stack direction="row" spacing={2} alignItems="center">
-            {/* Corporate shield logo */}
+            {/* Kewars Logo Image */}
             <Box 
+              component="img"
+              src={kewarsLogo}
+              alt="KEWARS Logo"
               sx={{ 
                 width: 36, 
                 height: 36, 
-                bgcolor: '#2563eb', 
-                borderRadius: '8px', 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                borderRadius: '50%', 
+                objectFit: 'cover',
+                border: '1.5px solid rgba(255, 255, 255, 0.2)'
               }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" fill="#ffffff" opacity="0.95" />
-                <path d="M10 15.5L7.5 13L8.91 11.59L10 12.67L14.59 8.09L16 9.5L10 15.5Z" fill="#2563eb" />
-              </svg>
-            </Box>
+            />
             <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.01em', color: '#ffffff' }}>
               {t('navTitle', lang)}
             </Typography>

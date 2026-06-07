@@ -26,6 +26,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 
 import { AuthContext } from "../contexts/AuthContext";
+import kewarsLogo from "../../assets/logo.png";
 
 const drawerWidth = 260;
 
@@ -69,24 +70,20 @@ export default function Layout() {
                 }}
                 onClick={() => navigate("/")}
             >
-                {/* Solid corporate shield icon */}
+                {/* Kewars Logo Image */}
                 <Box
+                  component="img"
+                  src={kewarsLogo}
+                  alt="KEWARS Logo"
                   sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: '10px',
-                    background: '#2563eb',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    width: 38,
+                    height: 38,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
                     flexShrink: 0,
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
                   }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L4 5V11.09C4 16.14 7.41 20.85 12 22C16.59 20.85 20 16.14 20 11.09V5L12 2Z" fill="#ffffff" opacity="0.95" />
-                    <path d="M10 15.5L7.5 13L8.91 11.59L10 12.67L14.59 8.09L16 9.5L10 15.5Z" fill="#2563eb" />
-                  </svg>
-                </Box>
+                />
                 <Box>
                     <Typography variant="subtitle1" sx={{ color: "#ffffff", fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
                         KEWARS
