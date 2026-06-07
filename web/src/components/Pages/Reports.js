@@ -333,11 +333,13 @@ function Reports() {
                             sx={{ borderRadius: "8px" }}
                           >
                             <MenuItem value=""><em>All Statuses</em></MenuItem>
-                            {(facets?.status?.[0]?.data || []).map((opt) => (
-                              <MenuItem key={opt.value} value={opt.value}>
-                                {opt.value.charAt(0).toUpperCase() + opt.value.slice(1)} ({opt.count})
-                              </MenuItem>
-                            ))}
+                            {(facets?.status?.[0]?.data || [])
+                              .filter((opt) => opt.value !== 'rejected')
+                              .map((opt) => (
+                                <MenuItem key={opt.value} value={opt.value}>
+                                  {opt.value.charAt(0).toUpperCase() + opt.value.slice(1)} ({opt.count})
+                                </MenuItem>
+                              ))}
                           </Select>
                         </FormControl>
 

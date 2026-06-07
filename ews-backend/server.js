@@ -387,13 +387,13 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
         try {
             const { page = 1, resultsPerPage = 10, filters = [], sortField, sortDirection } = req.body || {};
 
-            // start from all reports
-            let list = Array.from(reports.values());
+            // start from all reports (excluding rejected reports)
+            let list = Array.from(reports.values()).filter(r => r.status !== 'rejected');
 
             // apply simple filters (filters format: [{ field, values: [...], type: "any" }])
             filters.forEach((f) => {
                 const field = f.field;
-                const values = f.values || [];
+                const values = field === "status" ? (f.values || []).filter(v => v !== 'rejected') : (f.values || []);
                 if (!values.length) return;
 
                 if (field === "incidentDateTime") {
@@ -437,7 +437,7 @@ if (process.env.USE_IN_MEMORY_API === 'true') {
             const start = (page - 1) * resultsPerPage;
             const results = list.slice(start, start + resultsPerPage);
 
-            const aggregations = buildAggregations(Array.from(reports.values()));
+            const aggregations = buildAggregations(Array.from(reports.values()).filter(r => r.status !== 'rejected'));
 
             // Return results; frontend will map id differently as needed
             return res.json({

@@ -179,7 +179,7 @@ const SearchResults = ({ results = [], token, userRoles }) => {
     if (window.confirm("Are you sure you want to archive/delete this report? This action cannot be undone.")) {
       try {
         const cleanId = reportId.replace("rep-", "");
-        const response = await fetch(`${API_BASE}/api/reports/${cleanId}`, {
+        const response = await fetch(`${API_BASE}/reports/${cleanId}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,

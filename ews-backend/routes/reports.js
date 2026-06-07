@@ -168,7 +168,11 @@ router.post("/search/reports", authenticate(), async (req, res) => {
         // -------------------------------------------------------------
         // 1. BUILD PRISMA WHERE FILTER
         // -------------------------------------------------------------
-        const where = {};
+        const where = {
+            status: {
+                not: 'rejected'
+            }
+        };
         filters.forEach((filter) => {
             if (!filter.field || !filter.values || !filter.values.length) return;
 
@@ -201,6 +205,9 @@ router.post("/search/reports", authenticate(), async (req, res) => {
                 if (cleanValues.length > 0) {
                     if (dbField === "categories") {
                         where[dbField] = { hasSome: cleanValues };
+                    } else if (dbField === "status") {
+                        const allowedValues = cleanValues.filter(v => v !== 'rejected');
+                        where.status = { in: allowedValues, not: 'rejected' };
                     } else {
                         where[dbField] = { in: cleanValues };
                     }
